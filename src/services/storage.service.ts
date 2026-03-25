@@ -46,11 +46,36 @@ export const storageService = {
   // Orders
   getOrders: (): Order[] => {
     try {
-      return JSON.parse(localStorage.getItem(KEYS.ORDERS) || '[]')
+      const orders: Order[] = JSON.parse(localStorage.getItem(KEYS.ORDERS) || '[]')
+      // Limpeza preventiva: remove imagens de pedidos antigos se existirem
+      let hasImage = false
+      const cleaned = orders.map(o => {
+        if (o.items) {
+          o.items = o.items.map(item => {
+            if (item.image) {
+              hasImage = true
+              const { image, ...rest } = item
+              return rest
+            }
+            return item
+          })
+        }
+        return o
+      })
+      if (hasImage) storageService.setOrders(cleaned)
+      return cleaned
     } catch { return [] }
   },
   setOrders: (orders: Order[]) => {
-    localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders))
+    try {
+      localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders))
+    } catch (e) {
+      console.error('Erro ao salvar pedidos:', e)
+      // Se estourar a cota, tentamos salvar apenas os últimos 50 pedidos
+      if (orders.length > 50) {
+        localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.slice(0, 50)))
+      }
+    }
   },
 
   // Clients

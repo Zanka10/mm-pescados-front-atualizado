@@ -179,7 +179,7 @@ export default function Products() {
 
       <div className="card">
         <div className="table">
-          <div className="table-head" style={{ gridTemplateColumns: '2.5fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1.5fr' }}>
+          <div className="table-head" style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
             <div className="th">Produto</div>
             <div className="th">Categoria</div>
             <div className="th">Estoque</div>
@@ -192,7 +192,7 @@ export default function Products() {
             <div className="empty-state">Nenhum produto encontrado.</div>
           ) : (
             current.map((p, idx) => (
-              <div className="table-row" key={p.name} style={{ gridTemplateColumns: '2.5fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1.5fr' }}>
+              <div className="table-row" key={p.name} style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
                 <div className="td">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div
@@ -363,8 +363,46 @@ export default function Products() {
                     placeholder="Digite uma descrição..." 
                     rows={3}
                     style={{ resize: 'none' }}
+                    value={form.description || ''}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </label>
+
+                {/* Promo Section */}
+                <div className="promo-section">
+                  <div className="promo-header">
+                    <span className="promo-title">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                      Ativar Promoção
+                    </span>
+                    <label className="switch">
+                      <input 
+                        type="checkbox" 
+                        checked={form.isPromo || false} 
+                        onChange={(e) => setForm({ ...form, isPromo: e.target.checked })}
+                      />
+                      <span className="slider"></span>
+                    </label>
+                  </div>
+                  
+                  {form.isPromo && (
+                    <div className="modal-field" style={{ margin: 0 }}>
+                      <span>Preço Promocional (R$)</span>
+                      <div className="price-input-row">
+                        <span className="price-prefix">R$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={form.promoPrice || ''}
+                          onChange={(e) => setForm({ ...form, promoPrice: Number(e.target.value) })}
+                          style={{ width: '120px' }}
+                        />
+                        <span className="price-suffix">/{priceType}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Category */}
                 <div className="modal-field">

@@ -1,3 +1,13 @@
+/* Global Scrollbar Removal (Functional but hidden) */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Webkit */
+}
+
 :root {
   --primary: #129e62;
   --primary-hover: #0e854d;
@@ -221,8 +231,6 @@
 
 .table {
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .table-head {
@@ -230,6 +238,7 @@
   padding: 16px 32px;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid var(--border-color);
+  gap: 16px;
 }
 
 .th {
@@ -238,6 +247,9 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table-row {
@@ -246,6 +258,7 @@
   border-bottom: 1px solid var(--border-color);
   align-items: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 16px;
 }
 
 .table-row:hover {
@@ -959,6 +972,77 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Promo Toggle Styles */
+.promo-section {
+  background: rgba(18, 158, 98, 0.03);
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px dashed rgba(18, 158, 98, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.promo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.promo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
 .input-with-icon {
   position: relative;
   width: 100%;
@@ -981,8 +1065,3 @@
 }
 
 /* Notification FAB */
-.notification-fab {
-  box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
-  padding: 16px 28px;
-  font-size: 15px;
-}

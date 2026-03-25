@@ -7,6 +7,7 @@ export type Product = {
   stockKg: number
   image?: string
   minStockKg: number
+  description?: string
 }
 
 export type OrderStatus = 'Pendente' | 'Em andamento' | 'Concluido' | 'Cancelado'

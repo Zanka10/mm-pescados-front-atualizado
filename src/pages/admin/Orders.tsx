@@ -179,7 +179,7 @@ export default function Orders() {
 
       <div className="card">
         <div className="table">
-          <div className="table-head" style={{ gridTemplateColumns: '0.8fr 2fr 1.5fr 1fr 1fr 1.2fr 1.2fr' }}>
+          <div className="table-head" style={{ gridTemplateColumns: '0.6fr 2fr 1.5fr 1fr 1fr 1.2fr 1fr' }}>
             <div className="th">ID</div>
             <div className="th">Cliente</div>
             <div className="th">Data/Hora</div>
@@ -192,7 +192,7 @@ export default function Orders() {
             <div className="empty-state">Nenhum pedido encontrado.</div>
           ) : (
             current.map((o) => (
-              <div className="table-row" key={o.id} style={{ gridTemplateColumns: '0.8fr 2fr 1.5fr 1fr 1fr 1.2fr 1.2fr' }}>
+              <div className="table-row" key={o.id} style={{ gridTemplateColumns: '0.6fr 2fr 1.5fr 1fr 1fr 1.2fr 1fr' }}>
                 <div className="td" style={{ fontWeight: 700, color: '#8a93a3' }}>#{o.id}</div>
                 <div className="td">
                   <div className="td-title">{o.clientName}</div>

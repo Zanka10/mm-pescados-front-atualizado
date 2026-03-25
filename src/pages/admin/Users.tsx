@@ -129,7 +129,7 @@ export default function Users() {
 
       <div className="card">
         <div className="table">
-          <div className="table-head" style={{ gridTemplateColumns: '1.5fr 2fr 1.2fr 1.2fr 1.2fr 1fr 1.2fr' }}>
+          <div className="table-head" style={{ gridTemplateColumns: '1.5fr 2fr 1.2fr 1.2fr 1fr 1fr 1fr' }}>
             <div className="th">Nome</div>
             <div className="th">Email</div>
             <div className="th">CPF</div>
@@ -142,7 +142,7 @@ export default function Users() {
             <div className="empty-state">Nenhum usuário encontrado.</div>
           ) : (
             current.map((u, idx) => (
-              <div className="table-row" key={u.email + idx} style={{ gridTemplateColumns: '1.5fr 2fr 1.2fr 1.2fr 1.2fr 1fr 1.2fr' }}>
+              <div className="table-row" key={u.email + idx} style={{ gridTemplateColumns: '1.5fr 2fr 1.2fr 1.2fr 1fr 1fr 1fr' }}>
                 <div className="td">
                   <div className="td-title">{u.name}</div>
                 </div>

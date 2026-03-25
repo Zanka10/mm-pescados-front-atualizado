@@ -8,8 +8,6 @@ type Client = {
   phone: string
 }
 
-const initialClients: Client[] = []
-
 export default function Clients() {
   const [items, setItems] = useState<Client[]>(() => storageService.getClients())
   const [search, setSearch] = useState('')
@@ -109,7 +107,7 @@ export default function Clients() {
 
       <div className="card">
         <div className="table">
-          <div className="table-head" style={{ gridTemplateColumns: '2fr 1.5fr 2.5fr 1.5fr 1.2fr' }}>
+          <div className="table-head" style={{ gridTemplateColumns: '2fr 1.5fr 2.5fr 1.5fr 1fr' }}>
             <div className="th">Empresa / Cliente</div>
             <div className="th">CPF / CNPJ</div>
             <div className="th">Endereço</div>
@@ -120,7 +118,7 @@ export default function Clients() {
             <div className="empty-state">Nenhum cliente encontrado.</div>
           ) : (
             current.map((c, idx) => (
-              <div className="table-row" key={c.name + idx} style={{ gridTemplateColumns: '2fr 1.5fr 2.5fr 1.5fr 1.2fr' }}>
+              <div className="table-row" key={c.name + idx} style={{ gridTemplateColumns: '2fr 1.5fr 2.5fr 1.5fr 1fr' }}>
                 <div className="td">
                   <div className="td-title">{c.name}</div>
                 </div>

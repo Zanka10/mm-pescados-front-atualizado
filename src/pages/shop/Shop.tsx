@@ -12,6 +12,7 @@ export default function Shop() {
   const { products, setProducts } = useProducts()
   const [cart, setCart] = useState<OrderItem[]>([])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart')
   
   const [clientInfo, setClientInfo] = useState({ 
@@ -85,12 +86,6 @@ export default function Shop() {
     }))
   }
 
-  const updateProductQuantity = (productName: string, delta: number) => {
-    const current = quantities[productName] || 1
-    const next = Math.max(1, current + delta)
-    setQuantities({ ...quantities, [productName]: next })
-  }
-
   const removeFromCart = (productName: string) => {
     setCart(cart.filter(item => item.productName !== productName))
   }
@@ -142,16 +137,25 @@ export default function Shop() {
       const storedOrders = storageService.getOrders()
       const orderId = storedOrders.length > 0 ? Math.max(...storedOrders.map(o => o.id)) + 1 : 1
       
+      const fullAddress = clientInfo.deliveryType === 'delivery' 
+        ? `${clientInfo.address}, nº ${clientInfo.number} ${clientInfo.complement} | CEP: ${clientInfo.cep}`
+        : 'Retirada na Loja'
+
       const orderData: Order = {
         id: orderId,
         clientName: clientInfo.name,
-        clientPhone: `${clientInfo.phone} | End: ${clientInfo.address}, nº ${clientInfo.number} ${clientInfo.complement} | CEP: ${clientInfo.cep}`,
+        clientPhone: `${clientInfo.phone} | End: ${fullAddress}`,
         date: Date.now(),
         createdAt: Date.now(),
         total: cartTotal,
         payment: clientInfo.payment as any,
         status: 'Pendente',
-        items: cart
+        items: cart.map(item => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price
+          // Removendo a imagem para não estourar o limite do LocalStorage
+        }))
       }
 
       if (clientInfo.payment === 'AbacatePay') {
@@ -164,20 +168,22 @@ export default function Shop() {
             quantity: item.quantity,
             unitPrice: Math.round(item.price * 100)
           })),
-          returnUrl: window.location.href,
-          completionUrl: window.location.href,
+          returnUrl: window.location.origin + '/shop?status=success',
+          completionUrl: window.location.origin + '/shop?status=success',
           customer: {
             name: clientInfo.name,
-            cellphone: clientInfo.phone,
+            cellphone: clientInfo.phone.replace(/\D/g, ''),
             email: clientInfo.email,
             taxId: clientInfo.taxId.replace(/\D/g, '')
           }
         })
 
-        if (response.data?.url) {
+        if (response?.data?.url) {
           storageService.setOrders([orderData, ...storedOrders])
           window.location.href = response.data.url
           return
+        } else {
+          throw new Error('Erro ao gerar cobrança AbacatePay')
         }
       }
 
@@ -187,7 +193,7 @@ export default function Shop() {
       storageService.addClientFromOrder({
         name: clientInfo.name,
         doc: clientInfo.taxId,
-        address: `${clientInfo.address}, nº ${clientInfo.number} ${clientInfo.complement} | CEP: ${clientInfo.cep}`,
+        address: fullAddress,
         phone: clientInfo.phone
       })
 
@@ -196,8 +202,9 @@ export default function Shop() {
       setIsDrawerOpen(false)
       setCheckoutStep('cart')
       setTimeout(() => setOrderSuccess(false), 5000)
-    } catch (err) {
-      alert('Erro ao processar pedido.')
+    } catch (err: any) {
+      console.error('Erro detalhado:', err)
+      alert('Erro ao processar pedido: ' + (err.message || 'Erro desconhecido'))
     } finally {
       setIsProcessing(false)
     }
@@ -251,7 +258,7 @@ export default function Shop() {
           ) : (
             filteredProducts.map(p => (
               <div key={p.name} className="shop-card">
-                <div className="shop-card-img">
+                <div className="shop-card-img" onClick={() => setSelectedProduct(p)} style={{ cursor: 'pointer' }}>
                   {p.image ? (
                     <img src={p.image} alt={p.name} />
                   ) : (
@@ -263,12 +270,16 @@ export default function Shop() {
                 </div>
                 <div className="shop-card-info">
                   <h3 className="product-name">{p.name}</h3>
-                  <p className="product-description">Fresco e de alta qualidade selecionado para você.</p>
                   
                   <div className="price-stock-row">
                     <div className="product-price">
-                      {p.isPromo && p.promoPrice ? (
-                        <span className="current-price">{formatCurrency(p.promoPrice)}</span>
+                      {p.isPromo && p.promoPrice && p.promoPrice > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '12px', textDecoration: 'line-through', color: 'var(--text-muted)', marginBottom: '-4px' }}>
+                            {formatCurrency(p.price)}
+                          </span>
+                          <span className="current-price">{formatCurrency(p.promoPrice)}</span>
+                        </div>
                       ) : (
                         <span className="current-price">{formatCurrency(p.price)}</span>
                       )}
@@ -303,6 +314,61 @@ export default function Shop() {
           <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V21a1 1 0 0 1-1 1C10.29 22 2 13.71 2 3a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.24 1.01l-2.21 2.2z" /></svg>
         </a>
       </div>
+
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div className="product-modal-overlay" onClick={() => setSelectedProduct(null)}>
+          <div className="product-modal" onClick={e => e.stopPropagation()}>
+            <div className="product-modal-header">
+              <h2 className="product-modal-title">{selectedProduct.name}</h2>
+              <button className="product-modal-close" onClick={() => setSelectedProduct(null)}>&times;</button>
+            </div>
+            <div className="product-modal-body">
+              <div className="product-modal-img">
+                {selectedProduct.image ? (
+                  <img src={selectedProduct.image} alt={selectedProduct.name} />
+                ) : (
+                  <div className="modal-no-img">🐟</div>
+                )}
+              </div>
+              <div className="product-modal-info">
+                <p className="product-modal-desc">
+                  {selectedProduct.description || "Produto fresco e de alta qualidade, selecionado com rigor para garantir o melhor sabor à sua mesa."}
+                </p>
+                <div className="product-modal-footer">
+                  <div className="product-modal-total">
+                    <span>Total:</span>
+                    <div style={{ textAlign: 'right' }}>
+                      {selectedProduct.isPromo && selectedProduct.promoPrice && selectedProduct.promoPrice > 0 ? (
+                        <>
+                          <div style={{ fontSize: '14px', textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                            {formatCurrency(selectedProduct.price)}
+                          </div>
+                          <span className="modal-price">{formatCurrency(selectedProduct.promoPrice)}</span>
+                        </>
+                      ) : (
+                        <span className="modal-price">{formatCurrency(selectedProduct.price)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button 
+                    className="modal-add-btn"
+                    onClick={() => {
+                      addToCart(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" className="modal-btn-icon">
+                      <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.27.12-.41 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+                    </svg>
+                    Adicionar ao carrinho
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cart Drawer */}
       <div className={`cart-drawer-overlay ${isDrawerOpen ? 'open' : ''}`} onClick={() => setIsDrawerOpen(false)}>
@@ -388,10 +454,13 @@ export default function Shop() {
                       onChange={e => {
                         let v = e.target.value.replace(/\D/g, '')
                         if (v.length <= 11) {
-                          v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                          if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                          else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{3})/, '$1.$2.$3')
+                          else if (v.length > 3) v = v.replace(/(\d{3})(\d{3})/, '$1.$2')
                           setClientInfo({...clientInfo, taxId: v})
                         }
                       }}
+                      maxLength={14}
                     />
                   </div>
                   <div className="form-group">

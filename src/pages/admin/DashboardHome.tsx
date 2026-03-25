@@ -162,11 +162,6 @@ export default function DashboardHome() {
           </div>
         </div>
       </div>
-
-      <button className="notification-fab">
-        <span className="fab-icon">🔔</span>
-        Ativar Som de Notificações
-      </button>
     </div>
   )
 }
