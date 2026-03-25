@@ -1,0 +1,203 @@
+*{box-sizing: border-box;}
+:root {
+  --login-bg: #121a27;
+  --login-input-bg: #1e2735;
+  --login-input-border: #8a93a3;
+  --login-input-text: #e7edf6;
+  --login-button-bg: #d23a36;
+  --login-button-bg-hover: #bb2f2b;
+  --login-button-text: #ffffff;
+}
+
+body {
+  margin: 0;
+  background-color: var(--login-bg);
+  color: var(--login-input-text);
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.login {
+    min-height: 100vh;
+    width: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    align-content: center;
+    justify-items: center;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    background: radial-gradient(1200px 480px at 50% -40%, rgba(255, 255, 255, 0.06), transparent 60%), radial-gradient(800px 320px at 20% 120%, rgba(0, 102, 204, 0.14), transparent 55%), var(--login-bg);
+}
+
+.login-brand {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-logo {
+  width: 100%;
+  max-width: 540px;
+  height: auto;
+  display: block;
+}
+
+.brand-caption {
+  font-size: 14px;
+  letter-spacing: 0.36em;
+  color: #cfd6e3;
+}
+/* Caixa do Login  */
+.login-panel {
+  width: 100%;
+  max-width: 420px;
+  flex-direction: column;
+  padding: 35px;
+  border-radius: 20px;
+  background: rgba(30, 39, 53, 0.6);
+  height: fit-content;
+
+}
+
+
+
+
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #cfd6e3;
+}
+
+.field-icon {
+  width: 18px;
+  height: 18px;
+  fill: #cfd6e3;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.login-input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid var(--login-input-border);
+  background-color: var(--login-input-bg);
+  color: var(--login-input-text);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+/* Fix para preenchimento automático (autofill) */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover, 
+.login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--login-input-text) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--login-input-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.with-icon {
+  padding-left: 36px;
+}
+
+.with-toggle {
+  padding-right: 36px;
+}
+
+.input-icon-left {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  fill: #b7c0cf;
+  pointer-events: none;
+}
+
+.input-icon-right {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.input-icon-right svg {
+  width: 18px;
+  height: 18px;
+  fill: #b7c0cf;
+}
+
+.login-input::placeholder {
+  color: #b7c0cf;
+}
+
+.field-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forgot-link {
+  font-size: 12px;
+  color: #8bb7ff;
+  text-decoration: none;
+}
+
+.login-error {
+  color: #ffd2d0;
+  font-size: 12px;
+  text-align: center;
+}
+
+.login-button {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e04642 0%, #d23a36 60%, #c5322e 100%);
+  color: var(--login-button-text);
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  background-color: var(--login-button-bg-hover);
+}
+
+.login-copy {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #8a93a3;
+}
