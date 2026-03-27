@@ -238,71 +238,11 @@ export default function Shop() {
   const handleFinalize = async () => {
     setIsProcessing(true)
     try {
-      const storedOrders = storageService.getOrders()
-      const orderId = storedOrders.length > 0 ? Math.max(...storedOrders.map(o => o.id)) + 1 : 1
-
-      const fullAddress = clientInfo.deliveryType === 'delivery'
-        ? `${clientInfo.address}, nº ${clientInfo.number} ${clientInfo.complement} | CEP: ${clientInfo.cep}`
-        : 'Retirada na Loja'
-
-      const orderData: Order = {
-        id: orderId,
-        clientName: clientInfo.name,
-        clientPhone: `${clientInfo.phone} | End: ${fullAddress}`,
-        date: Date.now(),
-        createdAt: Date.now(),
-        total: cartTotal,
-        payment: clientInfo.payment as any,
-        status: 'Pendente',
-        items: cart.map(item => ({
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price
-          // Removendo a imagem para não estourar o limite do LocalStorage
-        }))
-      }
-
-      if (clientInfo.payment === 'AbacatePay') {
-        const response = await paymentService.createBilling({
-          frequency: 'ONE_TIME',
-          methods: ['PIX', 'CARD'],
-          products: cart.map(item => ({
-            externalId: item.productName,
-            name: item.productName,
-            quantity: item.quantity,
-            unitPrice: Math.round(item.price * 100)
-          })),
-          returnUrl: window.location.origin + '/shop?status=success',
-          completionUrl: window.location.origin + '/shop?status=success',
-          customer: {
-            name: clientInfo.name,
-            cellphone: clientInfo.phone.replace(/\D/g, ''),
-            email: clientInfo.email,
-            taxId: clientInfo.taxId.replace(/\D/g, '')
-          }
-        })
-
-        if (response?.data?.url) {
-          storageService.setOrders([orderData, ...storedOrders])
-          window.location.href = response.data.url
-          return
-        } else {
-          throw new Error('Erro ao gerar cobrança AbacatePay')
-        }
-      }
-
-      storageService.setOrders([orderData, ...storedOrders])
-
-      // Salvar cliente na aba de clientes
-      storageService.addClientFromOrder({
-        name: clientInfo.name,
-        doc: clientInfo.taxId,
-        address: fullAddress,
-        phone: clientInfo.phone
-      })
+      await api.post('/orders', {})
 
       setOrderSuccess(true)
       setCart([])
+      setCartItemIdMap({})
       setIsDrawerOpen(false)
       setCheckoutStep('cart')
       setTimeout(() => setOrderSuccess(false), 5000)
