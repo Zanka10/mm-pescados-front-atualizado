@@ -53,10 +53,12 @@ export default function Products() {
   const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM)
   const [hasPromo, setHasPromo] = useState(false)
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -114,9 +116,80 @@ export default function Products() {
     return 'stock'
   }
 
-  function remove(id: string) {
+  function generateSlug(name: string) {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+  }
+
+  async function submitProduct() {
+    if (!form.name.trim() || !form.categoryId) return
+
+    setIsSubmitting(true)
+    const payload = {
+      name: form.name.trim(),
+      slug: generateSlug(form.name),
+      description: form.description || null,
+      // imageUrl: form.imageUrl || null, // TODO: implementar upload de imagem no backend
+      priceCents: form.priceCents,
+      promoPriceCents: hasPromo ? form.promoPriceCents : null,
+      unitLabel: form.unitLabel,
+      isActive: true,
+      categoryId: form.categoryId,
+      quantity: form.quantity,
+      minQuantity: form.minQuantity,
+    }
+
+    try {
+      if (editingId) {
+        await api.patch(`/products/${editingId}`, payload)
+      } else {
+        await api.post('/products', payload)
+      }
+      const response = await api.get('/products')
+      setItems(response.data ?? [])
+      setDrawerOpen(false)
+      setForm(EMPTY_FORM)
+      setHasPromo(false)
+      setEditingId(null)
+    } catch (err: any) {
+      console.error(editingId ? 'Erro ao editar produto:' : 'Erro ao cadastrar produto:', err)
+      alert((editingId ? 'Erro ao editar produto: ' : 'Erro ao cadastrar produto: ') + (err.message || 'Erro desconhecido'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  function openEdit(p: ApiProduct) {
+    setEditingId(p.id)
+    setForm({
+      name: p.name,
+      description: p.description ?? '',
+      imageUrl: p.imageUrl ?? '',
+      priceCents: p.priceCents,
+      promoPriceCents: p.promoPriceCents,
+      unitLabel: p.unitLabel,
+      categoryId: p.category.id,
+      quantity: p.inventory.quantity,
+      minQuantity: p.inventory.minQuantity,
+    })
+    setHasPromo(p.promoPriceCents !== null)
+    setDrawerOpen(true)
+  }
+
+  async function remove(id: string) {
     if (!confirm('Deseja realmente excluir este produto?')) return
-    setItems(prev => prev.filter(p => p.id !== id))
+    try {
+      await api.delete(`/products/${id}`)
+      setItems(prev => prev.filter(p => p.id !== id))
+    } catch (err: any) {
+      console.error('Erro ao excluir produto:', err)
+      alert('Erro ao excluir produto: ' + (err.message || 'Erro desconhecido'))
+    }
   }
 
   return (
@@ -126,7 +199,7 @@ export default function Products() {
           <h1 className="main-title">Produtos</h1>
           <p className="main-subtitle">Gerencie os produtos do painel</p>
         </div>
-        <button className="button button-success" onClick={() => { setForm(EMPTY_FORM); setHasPromo(false); setDrawerOpen(true) }}>
+        <button className="button button-success" onClick={() => { setForm(EMPTY_FORM); setHasPromo(false); setEditingId(null); setDrawerOpen(true) }}>
           <span className="button-icon">
             <svg viewBox="0 0 24 24">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -215,7 +288,7 @@ export default function Products() {
                   </span>
                 </div>
                 <div className="td col-actions">
-                  <button className="button button-edit" title="Editar">
+                  <button className="button button-edit" title="Editar" onClick={() => openEdit(p)}>
                     <span className="button-icon">
                       <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11-11-3.75-3.75-11 11zM17.66 3.41a1.996 1.996 0 1 1 2.82 2.82l-1.41 1.41-2.82-2.82z" /></svg>
                     </span>
@@ -263,7 +336,7 @@ export default function Products() {
         <div className="modal" onClick={() => setDrawerOpen(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Cadastrar Produto</h2>
+              <h2 className="modal-title">{editingId ? 'Editar Produto' : 'Cadastrar Produto'}</h2>
               <button className="modal-close" onClick={() => setDrawerOpen(false)}>&times;</button>
             </div>
 
@@ -422,8 +495,12 @@ export default function Products() {
               <button type="button" className="button btn-cancel" onClick={() => setDrawerOpen(false)}>
                 Cancelar
               </button>
-              <button type="button" className="button button-success">
-                Cadastrar
+              <button type="button" className="button button-success" onClick={submitProduct} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <><span className="shop-spinner" style={{ width: 16, height: 16, borderWidth: 2, display: 'inline-block', verticalAlign: 'middle', marginRight: 8 }} />Processando...</>
+                ) : (
+                  editingId ? 'Salvar Alterações' : 'Cadastrar'
+                )}
               </button>
             </div>
           </div>
