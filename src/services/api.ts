@@ -38,6 +38,22 @@ export const api = {
     return response.json()
   },
 
+  async put(path: string, data: any) {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Erro na requisição')
+    }
+
+    return response.json()
+  },
+
   async delete(path: string) {
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'DELETE',
