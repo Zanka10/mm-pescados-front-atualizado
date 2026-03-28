@@ -21,6 +21,30 @@ interface ApiProduct {
   }
 }
 
+interface ProductForm {
+  name: string
+  description: string
+  imageUrl: string
+  priceCents: number
+  promoPriceCents: number | null
+  unitLabel: string
+  categoryId: string
+  quantity: number
+  minQuantity: number
+}
+
+const EMPTY_FORM: ProductForm = {
+  name: '',
+  description: '',
+  imageUrl: '',
+  priceCents: 0,
+  promoPriceCents: null,
+  unitLabel: 'kg',
+  categoryId: '',
+  quantity: 0,
+  minQuantity: 0,
+}
+
 export default function Products() {
   const [items, setItems] = useState<ApiProduct[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,6 +52,19 @@ export default function Products() {
   const [category, setCategory] = useState('Todas as Categorias')
   const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(1)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState<ProductForm>(EMPTY_FORM)
+  const [hasPromo, setHasPromo] = useState(false)
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState('')
+
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setForm(prev => ({ ...prev, imageUrl: reader.result as string }))
+    reader.readAsDataURL(file)
+  }
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -89,7 +126,7 @@ export default function Products() {
           <h1 className="main-title">Produtos</h1>
           <p className="main-subtitle">Gerencie os produtos do painel</p>
         </div>
-        <button className="button button-success">
+        <button className="button button-success" onClick={() => { setForm(EMPTY_FORM); setHasPromo(false); setDrawerOpen(true) }}>
           <span className="button-icon">
             <svg viewBox="0 0 24 24">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -221,6 +258,177 @@ export default function Products() {
           </div>
         </div>
       </div>
+
+      {drawerOpen && (
+        <div className="modal" onClick={() => setDrawerOpen(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Cadastrar Produto</h2>
+              <button className="modal-close" onClick={() => setDrawerOpen(false)}>&times;</button>
+            </div>
+
+            <div className="modal-body">
+              <form className="modal-form" onSubmit={e => e.preventDefault()}>
+
+                {/* Imagem */}
+                <div className="modal-field">
+                  <span>Imagem</span>
+                  <div className="image-upload-container">
+                    <div className="image-preview-box">
+                      {form.imageUrl ? (
+                        <img src={form.imageUrl} alt="Preview" />
+                      ) : (
+                        <span style={{ fontSize: '32px' }}>🐟</span>
+                      )}
+                    </div>
+                    <div className="upload-controls">
+                      <label className="upload-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                        Enviar Imagem
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                      </label>
+                      <p className="upload-hint">Envie uma imagem do produto</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nome */}
+                <label className="modal-field">
+                  <span>Nome *</span>
+                  <input
+                    placeholder="Digite o nome do produto"
+                    value={form.name}
+                    onChange={e => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
+                </label>
+
+                {/* Preço */}
+                <div className="modal-field">
+                  <span>Preço</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className="price-type-selector">
+                      <button type="button" className={`price-type-btn ${form.unitLabel === 'un' ? 'active' : ''}`} onClick={() => setForm({ ...form, unitLabel: 'un' })}>Por unidade</button>
+                      <button type="button" className={`price-type-btn ${form.unitLabel === 'kg' ? 'active' : ''}`} onClick={() => setForm({ ...form, unitLabel: 'kg' })}>Por kg</button>
+                    </div>
+                    <div className="price-input-row">
+                      <span className="price-prefix">R$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0,00"
+                        value={form.priceCents ? form.priceCents / 100 : ''}
+                        onChange={e => setForm({ ...form, priceCents: Math.round(Number(e.target.value) * 100) })}
+                        required
+                        style={{ width: '120px' }}
+                      />
+                      <span className="price-suffix">/{form.unitLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descrição */}
+                <label className="modal-field">
+                  <span>Descrição</span>
+                  <textarea
+                    placeholder="Digite uma descrição..."
+                    rows={3}
+                    style={{ resize: 'none' }}
+                    value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                  />
+                </label>
+
+                {/* Promoção */}
+                <div className="promo-section">
+                  <div className="promo-header">
+                    <span className="promo-title">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+                      Ativar Promoção
+                    </span>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={hasPromo}
+                        onChange={e => {
+                          setHasPromo(e.target.checked)
+                          if (!e.target.checked) setForm({ ...form, promoPriceCents: null })
+                        }}
+                      />
+                      <span className="slider"></span>
+                    </label>
+                  </div>
+                  {hasPromo && (
+                    <div className="modal-field" style={{ margin: 0 }}>
+                      <span>Preço Promocional (R$)</span>
+                      <div className="price-input-row">
+                        <span className="price-prefix">R$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={form.promoPriceCents ? form.promoPriceCents / 100 : ''}
+                          onChange={e => setForm({ ...form, promoPriceCents: Math.round(Number(e.target.value) * 100) })}
+                          style={{ width: '120px' }}
+                        />
+                        <span className="price-suffix">/{form.unitLabel}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Categoria */}
+                <div className="modal-field">
+                  <span>Categoria</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className="select">
+                      <select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })}>
+                        <option value="">Selecione uma categoria</option>
+                        {Array.from(new Map(items.map(p => [p.category.id, p.category])).values()).map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {!addingCategory ? (
+                      <button type="button" style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '13px' }} onClick={() => setAddingCategory(true)}>
+                        + Cadastrar Categoria
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input placeholder="Nova categoria" value={newCategory} onChange={e => setNewCategory(e.target.value)} />
+                        <button type="button" className="button button-success" style={{ padding: '8px 16px' }} onClick={() => { setNewCategory(''); setAddingCategory(false) }}>OK</button>
+                        <button type="button" className="button" style={{ padding: '8px 16px' }} onClick={() => setAddingCategory(false)}>X</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Estoque */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <label className="modal-field">
+                    <span>Estoque ({form.unitLabel})</span>
+                    <input type="number" value={form.quantity || ''} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} />
+                  </label>
+                  <label className="modal-field">
+                    <span>Mínimo ({form.unitLabel})</span>
+                    <input type="number" value={form.minQuantity || ''} onChange={e => setForm({ ...form, minQuantity: Number(e.target.value) })} />
+                  </label>
+                </div>
+
+              </form>
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" className="button btn-cancel" onClick={() => setDrawerOpen(false)}>
+                Cancelar
+              </button>
+              <button type="button" className="button button-success">
+                Cadastrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
