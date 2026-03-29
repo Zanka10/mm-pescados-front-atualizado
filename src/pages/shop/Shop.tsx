@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import '../../assets/styles/Shop.css'
 import type { Order, OrderItem, Product } from '../../types'
 import { paymentService } from '../../services/payment.service'
@@ -24,6 +25,9 @@ interface CategoryProps {
 }
 
 export default function Shop() {
+  const navigate = useNavigate()
+  const shopUser = useMemo(() => storageService.getShopAuthUser(), [])
+  
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<OrderItem[]>([])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -31,9 +35,9 @@ export default function Shop() {
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart')
 
   const [clientInfo, setClientInfo] = useState({
-    name: '',
-    phone: '',
-    email: '',
+    name: shopUser?.name || '',
+    phone: shopUser?.phone || '',
+    email: shopUser?.email || '',
     taxId: '',
     cep: '',
     address: '',
@@ -43,6 +47,11 @@ export default function Shop() {
     payment: 'Pix' as 'Pix' | 'Cartão' | 'Dinheiro' | 'AbacatePay',
     notes: ''
   })
+
+  const handleLogout = () => {
+    storageService.shopLogout()
+    navigate('/loja/login')
+  }
 
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
@@ -55,6 +64,8 @@ export default function Shop() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productIdMap, setProductIdMap] = useState<Record<string, string>>({});
   const [cartItemIdMap, setCartItemIdMap] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     const handleCategories = async () => {
@@ -112,9 +123,23 @@ export default function Shop() {
   }, [])
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'Todas') return products
-    return products.filter(p => p.category === selectedCategory)
+    let result = products
+    if (selectedCategory !== 'Todas') {
+      result = products.filter(p => p.category === selectedCategory)
+    }
+    return result
   }, [products, selectedCategory])
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+
+  const currentProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredProducts, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory])
 
 
   const addToCart = async (product: Product) => {
@@ -270,6 +295,15 @@ export default function Shop() {
           </div>
         </div>
         <div className="header-right">
+          <div className="user-info-shop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', marginRight: '16px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>Olá, {shopUser?.name?.split(' ')[0]}!</span>
+            <button 
+              onClick={handleLogout}
+              style={{ background: 'none', border: 'none', color: '#ff4757', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+            >
+              Sair
+            </button>
+          </div>
           <a href="/login" className="admin-btn">Painel admin</a>
           <button className="view-cart-btn" onClick={() => setIsDrawerOpen(true)}>
             <span className="cart-badge">{cart.length}</span>
@@ -312,10 +346,10 @@ export default function Shop() {
               <div className="shop-spinner" />
               <p className="shop-loading-text">Carregando produtos...</p>
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : currentProducts.length === 0 ? (
             <p className="no-products">Nenhum produto disponível no momento.</p>
           ) : (
-            filteredProducts.map(p => (
+            currentProducts.map(p => (
               <div key={p.name} className="shop-card">
                 <div className="shop-card-img" onClick={() => setSelectedProduct(p)} style={{ cursor: 'pointer' }}>
                   {p.image ? (
@@ -362,6 +396,47 @@ export default function Shop() {
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="shop-pagination">
+            <button
+              className="pagination-btn"
+              disabled={currentPage === 1}
+              onClick={() => {
+                setCurrentPage(prev => Math.max(1, prev - 1));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6" /></svg>
+              Anterior
+            </button>
+            <div className="pagination-pages">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  className={`page-number ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => {
+                    setCurrentPage(page);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              className="pagination-btn"
+              disabled={currentPage === totalPages}
+              onClick={() => {
+                setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Próxima
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6" transform="rotate(180 12 12)" /></svg>
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Botão flutuante do WhatsApp */}

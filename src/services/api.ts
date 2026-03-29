@@ -1,15 +1,22 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('mm-auth-token')
+  const adminToken = localStorage.getItem('mm-auth-token')
+  const shopToken = localStorage.getItem('mm-shop-auth-token')
+  const token = adminToken || shopToken
   return token ? { 'Authorization': `Bearer ${token}` } : {}
 }
 
 export const api = {
-  async post(path: string, data: any) {
+  async post(path: string, data: any, skipAuth = false) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers,
       credentials: 'include',
       body: JSON.stringify(data),
     })
@@ -22,10 +29,15 @@ export const api = {
     return response.json()
   },
 
-  async patch(path: string, data: any) {
+  async patch(path: string, data: any, skipAuth = false) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers,
       credentials: 'include',
       body: JSON.stringify(data),
     })
@@ -38,10 +50,15 @@ export const api = {
     return response.json()
   },
 
-  async put(path: string, data: any) {
+  async put(path: string, data: any, skipAuth = false) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers,
       credentials: 'include',
       body: JSON.stringify(data),
     })
@@ -54,10 +71,15 @@ export const api = {
     return response.json()
   },
 
-  async delete(path: string) {
+  async delete(path: string, skipAuth = false) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers,
       credentials: 'include',
     })
 
@@ -69,10 +91,15 @@ export const api = {
     return response.json()
   },
 
-  async postFormData(path: string, data: FormData) {
+  async postFormData(path: string, data: FormData, skipAuth = false) {
+    const headers: Record<string, string> = {}
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
-      headers: { ...getAuthHeaders() },
+      headers,
       credentials: 'include',
       body: data,
     })
@@ -85,10 +112,15 @@ export const api = {
     return response.json()
   },
 
-  async patchFormData(path: string, data: FormData) {
+  async patchFormData(path: string, data: FormData, skipAuth = false) {
+    const headers: Record<string, string> = {}
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'PATCH',
-      headers: { ...getAuthHeaders() },
+      headers,
       credentials: 'include',
       body: data,
     })
@@ -101,10 +133,15 @@ export const api = {
     return response.json()
   },
 
-  async get(path: string) {
+  async get(path: string, skipAuth = false) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (!skipAuth) {
+      Object.assign(headers, getAuthHeaders())
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers,
       credentials: 'include',
     })
 

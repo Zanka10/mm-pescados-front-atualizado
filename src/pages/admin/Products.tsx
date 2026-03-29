@@ -256,14 +256,13 @@ export default function Products() {
 
       <div className="card">
         <div className="table">
-          <div className="table-head" style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1.2fr 1fr' }}>
+          <div className="table-head" style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
             <div className="th">Produto</div>
             <div className="th">Categoria</div>
             <div className="th">Estoque</div>
             <div className="th">Mínimo</div>
             <div className="th">Preço</div>
             <div className="th">Status</div>
-            <div className="th">Habilitado</div>
             <div className="th" style={{ textAlign: 'right' }}>Ações</div>
           </div>
 
@@ -273,7 +272,7 @@ export default function Products() {
             <div className="empty-state">Nenhum produto encontrado.</div>
           ) : (
             current.map((p) => (
-              <div className="table-row" key={p.id} style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1.2fr 1fr' }}>
+              <div className="table-row" key={p.id} style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
                 <div className="td">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="product-avatar">
@@ -287,6 +286,9 @@ export default function Products() {
                       <div className="td-title">{p.name}</div>
                       {p.promoPriceCents !== null && (
                         <span style={{ color: '#129e62', fontSize: '11px', fontWeight: 700 }}>OFERTA ATIVA</span>
+                      )}
+                      {!p.isActive && (
+                        <span style={{ color: '#ff6b6b', fontSize: '11px', fontWeight: 700, marginLeft: 8 }}>DESABILITADO</span>
                       )}
                     </div>
                   </div>
@@ -310,19 +312,6 @@ export default function Products() {
                   <span className={`status-badge ${statusOf(p) === 'stock' ? 'status-ok' : statusOf(p) === 'low' ? 'status-low' : 'status-none'}`}>
                     {statusOf(p) === 'stock' ? 'Em Estoque' : statusOf(p) === 'low' ? 'Baixo' : 'Sem Estoque'}
                   </span>
-                </div>
-                <div className="td">
-                  <label className="switch-status">
-                    <input
-                      type="checkbox"
-                      checked={p.isActive}
-                      onChange={() => toggleActive(p)}
-                    />
-                    <span className="slider-status">
-                      <span className="on-text">ON</span>
-                      <span className="off-text">OFF</span>
-                    </span>
-                  </label>
                 </div>
                 <div className="td col-actions">
                   <button className="button button-edit" title="Editar" onClick={() => openEdit(p)}>
@@ -412,6 +401,29 @@ export default function Products() {
                     required
                   />
                 </label>
+
+                {/* Status de Ativação */}
+                <div className="promo-section" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)' }}>
+                  <div className="promo-header">
+                    <span className="promo-title" style={{ color: form.isActive ? 'var(--primary)' : '#ff6b6b' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                      {form.isActive ? 'Produto Habilitado' : 'Produto Desabilitado'}
+                    </span>
+                    <label className="switch-status">
+                      <input
+                        type="checkbox"
+                        checked={form.isActive}
+                        onChange={e => setForm({ ...form, isActive: e.target.checked })}
+                      />
+                      <span className="slider-status">
+                        <span className="on-text">ON</span>
+                        <span className="off-text">OFF</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
 
                 {/* Preço */}
                 <div className="modal-field">

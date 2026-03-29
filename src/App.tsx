@@ -4,6 +4,8 @@ import './assets/styles/App.css'
 import Dashboard from './components/layout/Dashboard'
 import Login from './components/admin/Login'
 import Shop from './pages/shop/Shop'
+import ShopLogin from './pages/shop/ShopLogin'
+import ShopRegister from './pages/shop/ShopRegister'
 import { storageService } from './services/storage.service'
 import { api } from './services/api'
 import type { User } from './types'
@@ -35,7 +37,7 @@ function App() {
       const response = await api.post('/auth/sign-in/email', {
         email: username.trim().toLowerCase(),
         password: password
-      })
+      }, true)
 
       // Supondo que a API retorne um objeto com user e token
       // Exemplo: { user: { name, email, role }, token: '...' }
@@ -62,9 +64,19 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/loja" element={<Shop />} />
+        {/* Rotas da Loja */}
+        <Route path="/loja/login" element={<ShopLogin />} />
+        <Route path="/cadastro" element={<ShopRegister />} />
+        <Route 
+          path="/loja" 
+          element={
+            storageService.isShopAuthenticated() 
+              ? <Shop /> 
+              : <Navigate to="/loja/login" replace />
+          } 
+        />
         
-        {/* Rotas de Autenticação */}
+        {/* Rotas de Autenticação Admin */}
         {!loggedIn ? (
           <>
             <Route path="/login" element={

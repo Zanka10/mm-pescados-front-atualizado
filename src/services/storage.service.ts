@@ -9,7 +9,10 @@ const KEYS = {
   AUTH_LOGGED: 'mm-auth-logged',
   AUTH_USER: 'mm-auth-user',
   AUTH_TOKEN: 'mm-auth-token',
-  CLIENTS: 'mm-clients'
+  CLIENTS: 'mm-clients',
+  SHOP_AUTH_LOGGED: 'mm-shop-auth-logged',
+  SHOP_AUTH_USER: 'mm-shop-auth-user',
+  SHOP_AUTH_TOKEN: 'mm-shop-auth-token'
 }
 
 export const storageService = {
@@ -99,26 +102,47 @@ export const storageService = {
     }
   },
 
-  // Auth
+  // Admin Auth
   getAuthUser: (): Partial<User> | null => {
     try {
       return JSON.parse(localStorage.getItem(KEYS.AUTH_USER) || 'null')
     } catch { return null }
   },
   getToken: () => localStorage.getItem(KEYS.AUTH_TOKEN),
-  setAuth: (logged: boolean, user: Partial<User> | null, token?: string) => {
+  setAuth: (logged: boolean, user: Partial<User> | null, token: string | null) => {
     localStorage.setItem(KEYS.AUTH_LOGGED, String(logged))
     localStorage.setItem(KEYS.AUTH_USER, JSON.stringify(user))
-    if (token) {
-      localStorage.setItem(KEYS.AUTH_TOKEN, token)
-    } else {
-      localStorage.removeItem(KEYS.AUTH_TOKEN)
-    }
+    if (token) localStorage.setItem(KEYS.AUTH_TOKEN, token)
+    else localStorage.removeItem(KEYS.AUTH_TOKEN)
+  },
+  isAuthenticated: (): boolean => {
+    return localStorage.getItem(KEYS.AUTH_LOGGED) === 'true'
   },
   logout: () => {
     localStorage.removeItem(KEYS.AUTH_LOGGED)
     localStorage.removeItem(KEYS.AUTH_USER)
     localStorage.removeItem(KEYS.AUTH_TOKEN)
   },
-  isAuthenticated: () => localStorage.getItem(KEYS.AUTH_LOGGED) === 'true'
+
+  // Shop Auth (External Clients)
+  getShopAuthUser: (): any | null => {
+    try {
+      return JSON.parse(localStorage.getItem(KEYS.SHOP_AUTH_USER) || 'null')
+    } catch { return null }
+  },
+  getShopToken: () => localStorage.getItem(KEYS.SHOP_AUTH_TOKEN),
+  setShopAuth: (logged: boolean, user: any | null, token: string | null) => {
+    localStorage.setItem(KEYS.SHOP_AUTH_LOGGED, String(logged))
+    localStorage.setItem(KEYS.SHOP_AUTH_USER, JSON.stringify(user))
+    if (token) localStorage.setItem(KEYS.SHOP_AUTH_TOKEN, token)
+    else localStorage.removeItem(KEYS.SHOP_AUTH_TOKEN)
+  },
+  isShopAuthenticated: (): boolean => {
+    return localStorage.getItem(KEYS.SHOP_AUTH_LOGGED) === 'true'
+  },
+  shopLogout: () => {
+    localStorage.removeItem(KEYS.SHOP_AUTH_LOGGED)
+    localStorage.removeItem(KEYS.SHOP_AUTH_USER)
+    localStorage.removeItem(KEYS.SHOP_AUTH_TOKEN)
+  }
 }
