@@ -731,6 +731,161 @@
   }
 }
 
+/* Detalhes do Pedido na Tabela */
+.order-items-detail {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.02);
+  margin: 0 32px 16px 32px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.order-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.order-item-row:last-child {
+  border-bottom: none;
+}
+
+.order-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.order-item-name {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.order-item-qty {
+  color: var(--primary);
+  font-weight: 700;
+  background: rgba(18, 158, 98, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.order-item-price {
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+/* Modal de Nota Fiscal */
+.invoice-modal {
+  max-width: 800px !important;
+}
+
+.invoice-content {
+  background: white;
+  color: #333;
+  padding: 40px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  line-height: 1.4;
+}
+
+.invoice-header {
+  text-align: center;
+  border-bottom: 2px dashed #ccc;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.invoice-logo {
+  font-size: 24px;
+  font-weight: 800;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.invoice-body {
+  margin-bottom: 20px;
+}
+
+.invoice-section {
+  margin-bottom: 15px;
+}
+
+.invoice-section-title {
+  font-weight: 800;
+  text-transform: uppercase;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoice-table th {
+  text-align: left;
+  border-bottom: 1px solid #000;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.invoice-table td {
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+.invoice-footer {
+  border-top: 2px dashed #ccc;
+  padding-top: 20px;
+  margin-top: 20px;
+  text-align: right;
+}
+
+.invoice-total-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+@media print {
+  .modal-header, .modal-footer {
+    display: none !important;
+  }
+  .modal {
+    background: white !important;
+    position: absolute !important;
+  }
+  .modal-card {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .invoice-content {
+    padding: 0 !important;
+  }
+}
+
 /* Modals Refinement */
 .modal {
   position: fixed;
@@ -998,6 +1153,85 @@
   gap: 8px;
 }
 
+/* Estilos para o Switch de Habilitar/Desabilitar */
+.switch-status {
+  position: relative;
+  display: inline-block;
+  width: 72px;
+  height: 32px;
+}
+
+.switch-status input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-status {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ff0000; /* Vermelho para OFF */
+  transition: .4s;
+  border-radius: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.slider-status:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.slider-status .on-text,
+.slider-status .off-text {
+  color: white;
+  font-size: 10px;
+  font-weight: 900;
+  user-select: none;
+  font-family: sans-serif;
+}
+
+.slider-status .on-text {
+  display: none;
+}
+
+.slider-status .off-text {
+  margin-left: auto;
+  padding-right: 4px;
+}
+
+input:checked + .slider-status {
+  background-color: #00ff00; /* Verde neon para ON */
+}
+
+input:checked + .slider-status:before {
+  transform: translateX(40px);
+}
+
+input:checked + .slider-status .on-text {
+  display: block;
+  padding-left: 4px;
+}
+
+input:checked + .slider-status .off-text {
+  display: none;
+}
+
+/* Rest of the file */
 .switch {
   position: relative;
   display: inline-block;
