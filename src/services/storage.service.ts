@@ -78,6 +78,10 @@ export const storageService = {
     }
   },
 
+  clearOrders: () => {
+    localStorage.removeItem(KEYS.ORDERS)
+  },
+
   // Clients
   getClients: (): any[] => {
     try {

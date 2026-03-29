@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { storageService } from '../../services/storage.service'
 import { formatCurrency } from '../../utils/formatters'
 
@@ -98,7 +99,12 @@ export default function DashboardHome() {
         <div className="card recent-orders-card">
           <div className="card-header">
             <h3>Pedidos Recentes</h3>
-            <a href="/dashboard/pedidos" className="view-all">Ver todos</a>
+            <Link to="/pedidos" className="view-all">
+              Ver todos
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
           </div>
           <div className="table">
             <div className="table-head" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>

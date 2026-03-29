@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './assets/styles/App.css'
 import Dashboard from './components/layout/Dashboard'
@@ -14,6 +14,12 @@ function App() {
   const [error, setError] = useState('')
   const [loggedIn, setLoggedIn] = useState(() => storageService.isAuthenticated())
   const [showPassword, setShowPassword] = useState(false)
+
+  // Limpeza dos pedidos em localStorage na inicialização
+  useEffect(() => {
+    storageService.clearOrders()
+    console.log('Todos os pedidos em localStorage foram limpos.')
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
