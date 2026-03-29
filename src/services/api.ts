@@ -69,6 +69,38 @@ export const api = {
     return response.json()
   },
 
+  async postFormData(path: string, data: FormData) {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() },
+      credentials: 'include',
+      body: data,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Erro na requisição')
+    }
+
+    return response.json()
+  },
+
+  async patchFormData(path: string, data: FormData) {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      method: 'PATCH',
+      headers: { ...getAuthHeaders() },
+      credentials: 'include',
+      body: data,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Erro na requisição')
+    }
+
+    return response.json()
+  },
+
   async get(path: string) {
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'GET',

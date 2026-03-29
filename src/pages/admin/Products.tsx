@@ -61,10 +61,12 @@ export default function Products() {
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setImageFile(file)
     const reader = new FileReader()
     reader.onload = () => setForm(prev => ({ ...prev, imageUrl: reader.result as string }))
     reader.readAsDataURL(file)
@@ -132,11 +134,17 @@ export default function Products() {
     if (!form.name.trim() || !form.categoryId) return
 
     setIsSubmitting(true)
-    const payload = {
+
+    const formData = new FormData();
+
+    if(!imageFile){
+      return console.log("precisa de uma imagem");
+    }
+
+    formData.append('product', JSON.stringify({
       name: form.name.trim(),
       slug: generateSlug(form.name),
       description: form.description || null,
-      // imageUrl: form.imageUrl || null, // TODO: implementar upload de imagem no backend
       priceCents: form.priceCents,
       promoPriceCents: hasPromo ? form.promoPriceCents : null,
       unitLabel: form.unitLabel,
@@ -144,13 +152,14 @@ export default function Products() {
       categoryId: form.categoryId,
       quantity: form.quantity,
       minQuantity: form.minQuantity,
-    }
-
+    }));
+    formData.append('image', imageFile);
+  
     try {
       if (editingId) {
-        await api.patch(`/products/${editingId}`, payload)
+        await api.patchFormData(`/products/${editingId}`, formData)
       } else {
-        await api.post('/products', payload)
+        await api.postFormData('/products', formData)
       }
       const response = await api.get('/products')
       setItems(response.data ?? [])
@@ -158,6 +167,7 @@ export default function Products() {
       setForm(EMPTY_FORM)
       setHasPromo(false)
       setEditingId(null)
+      setImageFile(null)
     } catch (err: any) {
       console.error(editingId ? 'Erro ao editar produto:' : 'Erro ao cadastrar produto:', err)
       alert((editingId ? 'Erro ao editar produto: ' : 'Erro ao cadastrar produto: ') + (err.message || 'Erro desconhecido'))
