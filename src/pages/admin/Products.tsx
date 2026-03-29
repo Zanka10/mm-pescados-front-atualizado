@@ -31,6 +31,7 @@ interface ProductForm {
   categoryId: string
   quantity: number
   minQuantity: number
+  isActive: boolean
 }
 
 const EMPTY_FORM: ProductForm = {
@@ -43,6 +44,7 @@ const EMPTY_FORM: ProductForm = {
   categoryId: '',
   quantity: 0,
   minQuantity: 0,
+  isActive: true,
 }
 
 export default function Products() {
@@ -138,7 +140,7 @@ export default function Products() {
       priceCents: form.priceCents,
       promoPriceCents: hasPromo ? form.promoPriceCents : null,
       unitLabel: form.unitLabel,
-      isActive: true,
+      isActive: form.isActive,
       categoryId: form.categoryId,
       quantity: form.quantity,
       minQuantity: form.minQuantity,
@@ -176,6 +178,7 @@ export default function Products() {
       categoryId: p.category.id,
       quantity: p.inventory.quantity,
       minQuantity: p.inventory.minQuantity,
+      isActive: p.isActive,
     })
     setHasPromo(p.promoPriceCents !== null)
     setDrawerOpen(true)
@@ -189,6 +192,16 @@ export default function Products() {
     } catch (err: any) {
       console.error('Erro ao excluir produto:', err)
       alert('Erro ao excluir produto: ' + (err.message || 'Erro desconhecido'))
+    }
+  }
+
+  async function toggleActive(p: ApiProduct) {
+    try {
+      await api.patch(`/products/${p.id}`, { isActive: !p.isActive })
+      setItems(prev => prev.map(item => item.id === p.id ? { ...item, isActive: !p.isActive } : item))
+    } catch (err: any) {
+      console.error('Erro ao atualizar status do produto:', err)
+      alert('Erro ao atualizar status do produto: ' + (err.message || 'Erro desconhecido'))
     }
   }
 
@@ -233,13 +246,14 @@ export default function Products() {
 
       <div className="card">
         <div className="table">
-          <div className="table-head" style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
+          <div className="table-head" style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1.2fr 1fr' }}>
             <div className="th">Produto</div>
             <div className="th">Categoria</div>
             <div className="th">Estoque</div>
             <div className="th">Mínimo</div>
             <div className="th">Preço</div>
             <div className="th">Status</div>
+            <div className="th">Habilitado</div>
             <div className="th" style={{ textAlign: 'right' }}>Ações</div>
           </div>
 
@@ -249,7 +263,7 @@ export default function Products() {
             <div className="empty-state">Nenhum produto encontrado.</div>
           ) : (
             current.map((p) => (
-              <div className="table-row" key={p.id} style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
+              <div className="table-row" key={p.id} style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1.2fr 1fr' }}>
                 <div className="td">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="product-avatar">
@@ -286,6 +300,19 @@ export default function Products() {
                   <span className={`status-badge ${statusOf(p) === 'stock' ? 'status-ok' : statusOf(p) === 'low' ? 'status-low' : 'status-none'}`}>
                     {statusOf(p) === 'stock' ? 'Em Estoque' : statusOf(p) === 'low' ? 'Baixo' : 'Sem Estoque'}
                   </span>
+                </div>
+                <div className="td">
+                  <label className="switch-status">
+                    <input
+                      type="checkbox"
+                      checked={p.isActive}
+                      onChange={() => toggleActive(p)}
+                    />
+                    <span className="slider-status">
+                      <span className="on-text">ON</span>
+                      <span className="off-text">OFF</span>
+                    </span>
+                  </label>
                 </div>
                 <div className="td col-actions">
                   <button className="button button-edit" title="Editar" onClick={() => openEdit(p)}>
