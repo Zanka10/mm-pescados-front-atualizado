@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { parseAsInteger, useQueryStates } from 'nuqs'
 import { toast } from 'sonner'
 import { api } from '../../services/api'
 import { formatCurrency } from '../../utils/formatters'
@@ -40,11 +41,15 @@ interface ProductFormFields {
 
 export default function Products() {
   const [items, setItems] = useState<ApiProduct[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('Todas as Categorias')
-  const [pageSize, setPageSize] = useState(10)
-  const [page, setPage] = useState(1)
+  const [filterCategoryId, setFilterCategoryId] = useState('')
+  const [{ page, limit }, setPagination] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    limit: parseAsInteger.withDefault(10),
+  })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -81,47 +86,40 @@ export default function Products() {
   }
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCategories = async () => {
       try {
-        const [productsRes, categoriesRes] = await Promise.all([
-          api.get('/products'),
-          api.get('/categories/all'),
-        ])
-
-        setItems(productsRes.data ?? [])
+        const categoriesRes = await api.get('/categories/all')
         setApiCategories(categoriesRes ?? [])
       } catch (err) {
-        console.error('Erro ao carregar dados:', err)
+        console.error('Erro ao carregar categorias:', err)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        })
+        if (search.trim()) params.set('search', search.trim())
+        if (filterCategoryId) params.set('categoryId', filterCategoryId)
+
+        const res = await api.get(`/products?${params.toString()}`)
+        setItems(res.data ?? [])
+        setTotal(res.meta?.total ?? 0)
+        setTotalPages(res.meta?.totalPages ?? 1)
+      } catch (err) {
+        console.error('Erro ao carregar produtos:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchData()
-  }, [])
-
-  
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return items.filter((p) => {
-      const matchesSearch =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.category.name.toLowerCase().includes(q)
-      const matchesCategory = category === 'Todas as Categorias' || p.category.name === category
-      return matchesSearch && matchesCategory
-    })
-  }, [items, search, category])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const current = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filtered.slice(start, start + pageSize)
-  }, [filtered, page, pageSize])
-
-  useEffect(() => {
-    const tp = Math.max(1, Math.ceil(filtered.length / pageSize))
-    if (page > tp) setPage(tp)
-  }, [filtered])
+    fetchProducts()
+  }, [page, limit, search, filterCategoryId])
 
   function statusOf(p: ApiProduct): 'stock' | 'low' | 'none' {
     if (p.inventory.quantity <= 0) return 'none'
@@ -182,8 +180,13 @@ export default function Products() {
         await api.postFormData('/products', formData)
         toast.success('Produto cadastrado com sucesso!')
       }
-      const response = await api.get('/products')
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+      if (search.trim()) params.set('search', search.trim())
+      if (filterCategoryId) params.set('categoryId', filterCategoryId)
+      const response = await api.get(`/products?${params.toString()}`)
       setItems(response.data ?? [])
+      setTotal(response.meta?.total ?? 0)
+      setTotalPages(response.meta?.totalPages ?? 1)
       setDrawerOpen(false)
       setEditingId(null)
       resetDrawer()
@@ -272,14 +275,15 @@ export default function Products() {
             className="search-input"
             placeholder="Buscar por nome ou categoria..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => { setSearch(e.target.value); setPagination({ page: 1 }) }}
+
           />
         </div>
         <div className="select">
-          <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1) }}>
-            <option>Todas as Categorias</option>
+          <select value={filterCategoryId} onChange={(e) => { setFilterCategoryId(e.target.value); setPagination({ page: 1 }) }}>
+            <option value="">Todas as Categorias</option>
             {apiCategories.map((c) => (
-              <option key={c.id} value={c.name}>{c.name}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -299,10 +303,10 @@ export default function Products() {
 
           {loading ? (
             <div className="empty-state">Carregando produtos...</div>
-          ) : current.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="empty-state">Nenhum produto encontrado.</div>
           ) : (
-            current.map((p) => (
+            items.map((p) => (
               <div className="table-row" key={p.id} style={{ gridTemplateColumns: '3fr 1.5fr 1fr 1fr 1.2fr 1.2fr 1fr' }}>
                 <div className="td">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -364,11 +368,11 @@ export default function Products() {
         <div className="table-footer">
           <div className="table-footer-left">
             <div>
-              Mostrando <b>{Math.min((page - 1) * pageSize + 1, filtered.length)}</b>–<b>{Math.min(page * pageSize, filtered.length)}</b> de <b>{filtered.length}</b>
+              Mostrando <b>{Math.min((page - 1) * limit + 1, total)}</b>–<b>{Math.min(page * limit, total)}</b> de <b>{total}</b>
             </div>
             <div className="page-size-selector">
               <span>Mostrar:</span>
-              <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>
+              <select value={limit} onChange={(e) => setPagination({ page: 1, limit: Number(e.target.value) })}>
                 {[5, 10, 20, 50].map(size => (
                   <option key={size} value={size}>{size}</option>
                 ))}
@@ -377,11 +381,11 @@ export default function Products() {
           </div>
           <div className="pager">
             <div className="pager-buttons">
-              <button className="pager-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+              <button className="pager-btn" onClick={() => setPagination(prev => ({ page: Math.max(1, prev.page - 1) }))} disabled={page <= 1}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
               </button>
               <span style={{ padding: '0 12px' }}>Página {page} de {totalPages}</span>
-              <button className="pager-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+              <button className="pager-btn" onClick={() => setPagination(prev => ({ page: Math.min(totalPages, prev.page + 1) }))} disabled={page >= totalPages}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
               </button>
             </div>

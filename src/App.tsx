@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v7'
 import './assets/styles/App.css'
 import Dashboard from './components/layout/Dashboard'
 import Login from './components/admin/Login'
@@ -63,6 +64,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <NuqsAdapter>
       <Routes>
         {/* Rotas da Loja */}
         <Route path="/loja/login" element={<ShopLogin />} />
@@ -111,6 +113,7 @@ function App() {
           </>
         )}
       </Routes>
+      </NuqsAdapter>
     </BrowserRouter>
   )
 }
