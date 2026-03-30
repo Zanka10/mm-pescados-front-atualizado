@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
 import { storageService } from '../../services/storage.service'
@@ -6,7 +6,7 @@ import '../../assets/styles/App.css'
 
 declare global {
   interface Window {
-    google: any;
+    google: any
   }
 }
 
@@ -16,85 +16,119 @@ export default function ShopLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const googleInitializedRef = useRef(false)
   const navigate = useNavigate()
 
   useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    const buttonElement = document.getElementById('google-login-btn')
+
+    if (!clientId || !window.google || !buttonElement) return
+    if (googleInitializedRef.current) return
 
     const handleGoogleResponse = async (response: any) => {
-      setIsSubmitting(true);
-      setError('');
-      try {
-        const res = await api.post('/auth/google', {
-          token: response.credential
-        }, true);
+      setIsSubmitting(true)
+      setError('')
 
-        if (res && res.token) {
+      try {
+        await api.post(
+          '/auth/sign-in/social',
+          {
+            provider: 'google',
+            credential: response.credential,
+          },
+          true
+        )
+
+        const session = await api.get('/auth/get-session', true)
+
+        if (session?.user) {
           storageService.setShopAuth(
             true,
             {
-              name: res.user?.name || 'Cliente',
-              email: res.user?.email,
-              phone: res.user?.phone || '',
+              name: session.user?.name || 'Cliente',
+              email: session.user?.email || '',
+              phone: session.user?.phone || '',
             },
-            res.token
-          );
-          navigate('/loja');
+            ''
+          )
+
+          navigate('/loja')
+        } else {
+          setError('Não foi possível validar a sessão do usuário.')
         }
       } catch (err: any) {
-        console.error('Erro no login Google:', err);
-        setError('Falha na autenticação com Google. Tente novamente.');
+        console.error('Erro no login Google:', err)
+        setError(
+          err?.message || 'Falha na autenticação com Google. Tente novamente.'
+        )
       } finally {
-        setIsSubmitting(false);
+        setIsSubmitting(false)
       }
-    };
+    }
 
-    if (window.google) {
+    try {
+      googleInitializedRef.current = true
+      buttonElement.innerHTML = ''
+
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: handleGoogleResponse,
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-login-btn'),
-        { theme: 'outline', size: 'large', width: '100%' }
-      );
+      })
+
+      window.google.accounts.id.renderButton(buttonElement, {
+        theme: 'outline',
+        size: 'large',
+        width: 320,
+      })
+    } catch (err) {
+      console.error('Erro ao inicializar botão Google:', err)
+      googleInitializedRef.current = false
     }
-  }, [navigate]);
+  }, [navigate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    
+
     if (!email.trim() || !password.trim()) {
       setError('Informe e-mail e senha')
       return
     }
 
     setIsSubmitting(true)
-    try {
-      const response = await api.post('/auth/sign-in/email', {
-        email: email.trim().toLowerCase(),
-        password: password
-      }, true)
 
-      if (response && response.token) {
+    try {
+      await api.post(
+        '/auth/sign-in/email',
+        {
+          email: email.trim().toLowerCase(),
+          password,
+        },
+        true
+      )
+
+      const session = await api.get('/auth/get-session', true)
+      
+      if (session?.user) {
         storageService.setShopAuth(
           true,
           {
-            name: response.user?.name || response.user?.email || 'Cliente',
-            email: response.user?.email,
-            phone: response.user?.phone || '',
+            name: session.user?.name || session.user?.email || 'Cliente',
+            email: session.user?.email || '',
+            phone: session.user?.phone || '',
           },
-          response.token
+          ''
         )
-        navigate('/loja')
+     navigate('/loja')
       } else {
-        setError('Resposta da API inválida')
+        setError('Não foi possível validar a sessão do usuário.')
       }
     } catch (err: any) {
       console.error('Erro no login do cliente:', err)
-      setError(err.message || 'Falha ao validar login. Verifique suas credenciais.')
+      setError(
+        err?.message || 'Falha ao validar login. Verifique suas credenciais.'
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -108,15 +142,38 @@ export default function ShopLogin() {
           alt="Mm Pescados"
           className="brand-logo"
         />
-        <p className="brand-caption" style={{ letterSpacing: '0.2em', color: 'var(--primary)', fontWeight: 700 }}>ÁREA DO CLIENTE</p>
+        <p
+          className="brand-caption"
+          style={{
+            letterSpacing: '0.2em',
+            color: 'var(--primary)',
+            fontWeight: 700,
+          }}
+        >
+          ÁREA DO CLIENTE
+        </p>
       </div>
-      
+
       <div className="login-panel">
-        <h2 style={{ textAlign: 'center', marginBottom: '24px', color: 'var(--text-main)', fontSize: '20px' }}>Bem-vindo de volta!</h2>
+        <h2
+          style={{
+            textAlign: 'center',
+            marginBottom: '24px',
+            color: 'var(--text-main)',
+            fontSize: '20px',
+          }}
+        >
+          Bem-vindo de volta!
+        </h2>
+
         <form className="login-form" onSubmit={handleSubmit} noValidate>
           <label className="field">
             <div className="input-wrapper">
-              <svg className="input-icon-left" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="input-icon-left"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z" />
               </svg>
               <input
@@ -129,10 +186,14 @@ export default function ShopLogin() {
               />
             </div>
           </label>
-          
+
           <label className="field">
             <div className="input-wrapper">
-              <svg className="input-icon-left" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="input-icon-left"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M12 17a2 2 0 1 0-2-2 2 2 0 0 0 2 2zm6-7h-1V8a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v8h16v-8a2 2 0 0 0-2-2zm-3 0H9V8a3 3 0 0 1 6 0z" />
               </svg>
               <input
@@ -147,6 +208,7 @@ export default function ShopLogin() {
                 type="button"
                 className="input-icon-right"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -160,25 +222,53 @@ export default function ShopLogin() {
               </button>
             </div>
           </label>
-          
+
           {error && <div className="login-error">{error}</div>}
-          
-          <button type="submit" className="login-button" disabled={isSubmitting} style={{ background: 'var(--primary)' }}>
+
+          <button
+            type="submit"
+            className="login-button"
+            disabled={isSubmitting}
+            style={{ background: 'var(--primary)' }}
+          >
             {isSubmitting ? 'Entrando...' : 'Entrar na Loja'}
           </button>
-          
+
           <div className="login-divider">
             <span>OU</span>
           </div>
 
-          <div id="google-login-btn" style={{ marginBottom: '16px' }}></div>
-          
-          <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)' }}>
-            Ainda não tem conta? <Link to="/cadastro" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Cadastre-se</Link>
+          <div
+            id="google-login-btn"
+            style={{
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          ></div>
+
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: '13px',
+              color: 'var(--text-muted)',
+            }}
+          >
+            Ainda não tem conta?{' '}
+            <Link
+              to="/cadastro"
+              style={{
+                color: 'var(--primary)',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Cadastre-se
+            </Link>
           </div>
         </form>
       </div>
-      
+
       <div className="login-copy">© {new Date().getFullYear()} MM Pescados</div>
     </div>
   )

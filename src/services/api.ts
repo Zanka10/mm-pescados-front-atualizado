@@ -1,155 +1,65 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api'
+export const API_URL =
+  import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'http://localhost:3333/api'
 
-function getAuthHeaders(): Record<string, string> {
-  const adminToken = localStorage.getItem('mm-auth-token')
-  const shopToken = localStorage.getItem('mm-shop-auth-token')
-  const token = adminToken || shopToken
-  return token ? { 'Authorization': `Bearer ${token}` } : {}
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+async function request<T = any>(
+  path: string,
+  method: HttpMethod,
+  body?: unknown,
+  withCredentials = false
+): Promise<T> {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  const response = await fetch(`${API_URL}${normalizedPath}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: withCredentials ? 'include' : 'same-origin',
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+
+  const contentType = response.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+
+  const data = isJson
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => null)
+
+  if (!response.ok) {
+    const message =
+      (typeof data === 'object' &&
+        data &&
+        'message' in data &&
+        (data as any).message) ||
+      (typeof data === 'string' && data) ||
+      'Erro na requisição'
+
+    throw new Error(message)
+  }
+
+  return data as T
 }
 
 export const api = {
-  async post(path: string, data: any, skipAuth = false) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
+  get<T = any>(path: string, withCredentials = false) {
+    return request<T>(path, 'GET', undefined, withCredentials)
   },
 
-  async patch(path: string, data: any, skipAuth = false) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'PATCH',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
+  post<T = any>(path: string, body?: unknown, withCredentials = false) {
+    return request<T>(path, 'POST', body, withCredentials)
   },
 
-  async put(path: string, data: any, skipAuth = false) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'PUT',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
+  put<T = any>(path: string, body?: unknown, withCredentials = false) {
+    return request<T>(path, 'PUT', body, withCredentials)
   },
 
-  async delete(path: string, skipAuth = false) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'DELETE',
-      headers,
-      credentials: 'include',
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
+  patch<T = any>(path: string, body?: unknown, withCredentials = false) {
+    return request<T>(path, 'PATCH', body, withCredentials)
   },
 
-  async postFormData(path: string, data: FormData, skipAuth = false) {
-    const headers: Record<string, string> = {}
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: data,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
+  delete<T = any>(path: string, withCredentials = false) {
+    return request<T>(path, 'DELETE', undefined, withCredentials)
   },
-
-  async patchFormData(path: string, data: FormData, skipAuth = false) {
-    const headers: Record<string, string> = {}
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'PATCH',
-      headers,
-      credentials: 'include',
-      body: data,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
-  },
-
-  async get(path: string, skipAuth = false) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (!skipAuth) {
-      Object.assign(headers, getAuthHeaders())
-    }
-
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method: 'GET',
-      headers,
-      credentials: 'include',
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Erro na requisição')
-    }
-
-    return response.json()
-  }
 }
