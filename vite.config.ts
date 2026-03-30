@@ -8,8 +8,11 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      host:"::",
+      host: '::',
       port: 5173,
+      headers: {
+        'Cross-Origin-Opener-Policy': 'unsafe-none',
+      },
       proxy: {
         '/api': {
           target: env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3333',
