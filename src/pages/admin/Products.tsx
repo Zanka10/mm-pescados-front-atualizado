@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { api } from '../../services/api'
 import { formatCurrency } from '../../utils/formatters'
 
@@ -21,30 +23,19 @@ interface ApiProduct {
   }
 }
 
-interface ProductForm {
+interface ApiCategory {
+  id: string
   name: string
-  description: string
-  imageUrl: string
-  priceCents: number
-  promoPriceCents: number | null
-  unitLabel: string
-  categoryId: string
-  quantity: number
-  minQuantity: number
   isActive: boolean
 }
 
-const EMPTY_FORM: ProductForm = {
-  name: '',
-  description: '',
-  imageUrl: '',
-  priceCents: 0,
-  promoPriceCents: null,
-  unitLabel: 'kg',
-  categoryId: '',
-  quantity: 0,
-  minQuantity: 0,
-  isActive: true,
+interface ProductFormFields {
+  name: string
+  categoryId: string
+  price: number
+  description: string
+  quantity: number
+  minQuantity: number
 }
 
 export default function Products() {
@@ -56,41 +47,59 @@ export default function Products() {
   const [page, setPage] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<ProductForm>(EMPTY_FORM)
+
+  const [unitLabel, setUnitLabel] = useState('kg')
+  const [isActive, setIsActive] = useState(true)
   const [hasPromo, setHasPromo] = useState(false)
+  const [promoPriceCents, setPromoPriceCents] = useState<number | null>(null)
+  const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+
+  const [apiCategories, setApiCategories] = useState<ApiCategory[]>([])
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors },
+  } = useForm<ProductFormFields>({
+    defaultValues: { name: '', categoryId: '', price: 0, description: '', quantity: 0, minQuantity: 0 },
+  })
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setImageFile(file)
     const reader = new FileReader()
-    reader.onload = () => setForm(prev => ({ ...prev, imageUrl: reader.result as string }))
+    reader.onload = () => setImageUrl(reader.result as string)
     reader.readAsDataURL(file)
   }
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/products')
-        setItems(response.data ?? [])
+        const [productsRes, categoriesRes] = await Promise.all([
+          api.get('/products'),
+          api.get('/categories/all'),
+        ])
+
+        setItems(productsRes.data ?? [])
+        setApiCategories(categoriesRes ?? [])
       } catch (err) {
-        console.error('Erro ao carregar produtos:', err)
+        console.error('Erro ao carregar dados:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchProducts()
+    fetchData()
   }, [])
 
-  const categories = useMemo(() => {
-    const names = items.map(p => p.category.name)
-    return Array.from(new Set(names))
-  }, [items])
-
+  
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return items.filter((p) => {
@@ -130,67 +139,78 @@ export default function Products() {
       .replace(/\s+/g, '-')
   }
 
-  async function submitProduct() {
-    if (!form.name.trim() || !form.categoryId) return
+  function resetDrawer() {
+    reset({ name: '', categoryId: '', price: 0, description: '', quantity: 0, minQuantity: 0 })
+    setUnitLabel('kg')
+    setIsActive(true)
+    setHasPromo(false)
+    setPromoPriceCents(null)
+    setImageUrl('')
+    setImageFile(null)
+  }
+
+  const onSubmit = handleSubmit(async (data) => {
+    if (!editingId && !imageFile) {
+      toast.error('Selecione uma imagem para o produto.')
+      return
+    }
 
     setIsSubmitting(true)
 
-    const formData = new FormData();
-
-    if(!imageFile){
-      return console.log("precisa de uma imagem");
+    const formData = new FormData()
+    formData.append('product', JSON.stringify({
+      name: data.name.trim(),
+      slug: generateSlug(data.name),
+      description: data.description || null,
+      priceCents: Math.round(data.price * 100),
+      promoPriceCents: hasPromo ? promoPriceCents : null,
+      unitLabel,
+      isActive,
+      categoryId: data.categoryId,
+      quantity: data.quantity,
+      minQuantity: data.minQuantity,
+    }))
+    if (imageFile) {
+      formData.append('image', imageFile)
     }
 
-    formData.append('product', JSON.stringify({
-      name: form.name.trim(),
-      slug: generateSlug(form.name),
-      description: form.description || null,
-      priceCents: form.priceCents,
-      promoPriceCents: hasPromo ? form.promoPriceCents : null,
-      unitLabel: form.unitLabel,
-      isActive: form.isActive,
-      categoryId: form.categoryId,
-      quantity: form.quantity,
-      minQuantity: form.minQuantity,
-    }));
-    formData.append('image', imageFile);
-  
     try {
       if (editingId) {
         await api.patchFormData(`/products/${editingId}`, formData)
+        toast.success('Produto atualizado com sucesso!')
       } else {
         await api.postFormData('/products', formData)
+        toast.success('Produto cadastrado com sucesso!')
       }
       const response = await api.get('/products')
       setItems(response.data ?? [])
       setDrawerOpen(false)
-      setForm(EMPTY_FORM)
-      setHasPromo(false)
       setEditingId(null)
-      setImageFile(null)
+      resetDrawer()
     } catch (err: any) {
       console.error(editingId ? 'Erro ao editar produto:' : 'Erro ao cadastrar produto:', err)
-      alert((editingId ? 'Erro ao editar produto: ' : 'Erro ao cadastrar produto: ') + (err.message || 'Erro desconhecido'))
+      toast.error((editingId ? 'Erro ao editar produto: ' : 'Erro ao cadastrar produto: ') + (err.message || 'Erro desconhecido'))
     } finally {
       setIsSubmitting(false)
     }
-  }
+  })
 
   function openEdit(p: ApiProduct) {
     setEditingId(p.id)
-    setForm({
+    reset({
       name: p.name,
-      description: p.description ?? '',
-      imageUrl: p.imageUrl ?? '',
-      priceCents: p.priceCents,
-      promoPriceCents: p.promoPriceCents,
-      unitLabel: p.unitLabel,
       categoryId: p.category.id,
+      price: p.priceCents / 100,
+      description: p.description ?? '',
       quantity: p.inventory.quantity,
       minQuantity: p.inventory.minQuantity,
-      isActive: p.isActive,
     })
+    setUnitLabel(p.unitLabel)
+    setIsActive(p.isActive)
     setHasPromo(p.promoPriceCents !== null)
+    setPromoPriceCents(p.promoPriceCents)
+    setImageUrl(p.imageUrl ?? '')
+    setImageFile(null)
     setDrawerOpen(true)
   }
 
@@ -199,19 +219,30 @@ export default function Products() {
     try {
       await api.delete(`/products/${id}`)
       setItems(prev => prev.filter(p => p.id !== id))
+      toast.success('Produto excluído.')
     } catch (err: any) {
       console.error('Erro ao excluir produto:', err)
-      alert('Erro ao excluir produto: ' + (err.message || 'Erro desconhecido'))
+      toast.error('Erro ao excluir produto: ' + (err.message || 'Erro desconhecido'))
     }
   }
 
-  async function toggleActive(p: ApiProduct) {
+  async function addCategory() {
+    const name = newCategory.trim()
+    if (!name) return
+    setIsSubmittingCategory(true)
     try {
-      await api.patch(`/products/${p.id}`, { isActive: !p.isActive })
-      setItems(prev => prev.map(item => item.id === p.id ? { ...item, isActive: !p.isActive } : item))
+      const res = await api.post('/categories', { name, slug: name.toLowerCase() })
+      const created: ApiCategory = res.category
+      setApiCategories(prev => [...prev, created])
+      reset({ ...getValues(), categoryId: created.id })
+      setNewCategory('')
+      setAddingCategory(false)
+      toast.success(`Categoria "${created.name}" criada.`)
     } catch (err: any) {
-      console.error('Erro ao atualizar status do produto:', err)
-      alert('Erro ao atualizar status do produto: ' + (err.message || 'Erro desconhecido'))
+      console.error('Erro ao criar categoria:', err)
+      toast.error('Erro ao criar categoria: ' + (err.message || 'Erro desconhecido'))
+    } finally {
+      setIsSubmittingCategory(false)
     }
   }
 
@@ -222,7 +253,7 @@ export default function Products() {
           <h1 className="main-title">Produtos</h1>
           <p className="main-subtitle">Gerencie os produtos do painel</p>
         </div>
-        <button className="button button-success" onClick={() => { setForm(EMPTY_FORM); setHasPromo(false); setEditingId(null); setDrawerOpen(true) }}>
+        <button className="button button-success" onClick={() => { resetDrawer(); setEditingId(null); setDrawerOpen(true) }}>
           <span className="button-icon">
             <svg viewBox="0 0 24 24">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -247,8 +278,8 @@ export default function Products() {
         <div className="select">
           <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1) }}>
             <option>Todas as Categorias</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {apiCategories.map((c) => (
+              <option key={c.id} value={c.name}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -367,15 +398,15 @@ export default function Products() {
             </div>
 
             <div className="modal-body">
-              <form className="modal-form" onSubmit={e => e.preventDefault()}>
+              <form className="modal-form" onSubmit={onSubmit}>
 
                 {/* Imagem */}
                 <div className="modal-field">
-                  <span>Imagem</span>
+                  <span>Imagem {!editingId && <span style={{ color: '#ff6b6b' }}>*</span>}</span>
                   <div className="image-upload-container">
                     <div className="image-preview-box">
-                      {form.imageUrl ? (
-                        <img src={form.imageUrl} alt="Preview" />
+                      {imageUrl ? (
+                        <img src={imageUrl} alt="Preview" />
                       ) : (
                         <span style={{ fontSize: '32px' }}>🐟</span>
                       )}
@@ -386,36 +417,36 @@ export default function Products() {
                         Enviar Imagem
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
                       </label>
-                      <p className="upload-hint">Envie uma imagem do produto</p>
+                      <p className="upload-hint">{editingId ? 'Deixe em branco para manter a imagem atual' : 'Envie uma imagem do produto'}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Nome */}
                 <label className="modal-field">
-                  <span>Nome *</span>
+                  <span>Nome <span style={{ color: '#ff6b6b' }}>*</span></span>
                   <input
                     placeholder="Digite o nome do produto"
-                    value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
-                    required
+                    {...register('name', { required: 'Nome é obrigatório' })}
+                    style={errors.name ? { borderColor: '#ff6b6b' } : {}}
                   />
+                  {errors.name && <span style={{ color: '#ff6b6b', fontSize: '12px' }}>{errors.name.message}</span>}
                 </label>
 
                 {/* Status de Ativação */}
                 <div className="promo-section" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)' }}>
                   <div className="promo-header">
-                    <span className="promo-title" style={{ color: form.isActive ? 'var(--primary)' : '#ff6b6b' }}>
+                    <span className="promo-title" style={{ color: isActive ? 'var(--primary)' : '#ff6b6b' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
-                      {form.isActive ? 'Produto Habilitado' : 'Produto Desabilitado'}
+                      {isActive ? 'Produto Habilitado' : 'Produto Desabilitado'}
                     </span>
                     <label className="switch-status">
                       <input
                         type="checkbox"
-                        checked={form.isActive}
-                        onChange={e => setForm({ ...form, isActive: e.target.checked })}
+                        checked={isActive}
+                        onChange={e => setIsActive(e.target.checked)}
                       />
                       <span className="slider-status">
                         <span className="on-text">ON</span>
@@ -427,11 +458,11 @@ export default function Products() {
 
                 {/* Preço */}
                 <div className="modal-field">
-                  <span>Preço</span>
+                  <span>Preço <span style={{ color: '#ff6b6b' }}>*</span></span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div className="price-type-selector">
-                      <button type="button" className={`price-type-btn ${form.unitLabel === 'un' ? 'active' : ''}`} onClick={() => setForm({ ...form, unitLabel: 'un' })}>Por unidade</button>
-                      <button type="button" className={`price-type-btn ${form.unitLabel === 'kg' ? 'active' : ''}`} onClick={() => setForm({ ...form, unitLabel: 'kg' })}>Por kg</button>
+                      <button type="button" className={`price-type-btn ${unitLabel === 'un' ? 'active' : ''}`} onClick={() => setUnitLabel('un')}>Por unidade</button>
+                      <button type="button" className={`price-type-btn ${unitLabel === 'kg' ? 'active' : ''}`} onClick={() => setUnitLabel('kg')}>Por kg</button>
                     </div>
                     <div className="price-input-row">
                       <span className="price-prefix">R$</span>
@@ -439,13 +470,16 @@ export default function Products() {
                         type="number"
                         step="0.01"
                         placeholder="0,00"
-                        value={form.priceCents ? form.priceCents / 100 : ''}
-                        onChange={e => setForm({ ...form, priceCents: Math.round(Number(e.target.value) * 100) })}
-                        required
-                        style={{ width: '120px' }}
+                        style={{ width: '120px', ...(errors.price ? { borderColor: '#ff6b6b' } : {}) }}
+                        {...register('price', {
+                          required: 'Preço é obrigatório',
+                          min: { value: 0.01, message: 'Preço deve ser maior que zero' },
+                          valueAsNumber: true,
+                        })}
                       />
-                      <span className="price-suffix">/{form.unitLabel}</span>
+                      <span className="price-suffix">/{unitLabel}</span>
                     </div>
+                    {errors.price && <span style={{ color: '#ff6b6b', fontSize: '12px' }}>{errors.price.message}</span>}
                   </div>
                 </div>
 
@@ -456,8 +490,7 @@ export default function Products() {
                     placeholder="Digite uma descrição..."
                     rows={3}
                     style={{ resize: 'none' }}
-                    value={form.description}
-                    onChange={e => setForm({ ...form, description: e.target.value })}
+                    {...register('description')}
                   />
                 </label>
 
@@ -474,7 +507,7 @@ export default function Products() {
                         checked={hasPromo}
                         onChange={e => {
                           setHasPromo(e.target.checked)
-                          if (!e.target.checked) setForm({ ...form, promoPriceCents: null })
+                          if (!e.target.checked) setPromoPriceCents(null)
                         }}
                       />
                       <span className="slider"></span>
@@ -489,11 +522,11 @@ export default function Products() {
                           type="number"
                           step="0.01"
                           placeholder="0,00"
-                          value={form.promoPriceCents ? form.promoPriceCents / 100 : ''}
-                          onChange={e => setForm({ ...form, promoPriceCents: Math.round(Number(e.target.value) * 100) })}
+                          value={promoPriceCents ? promoPriceCents / 100 : ''}
+                          onChange={e => setPromoPriceCents(Math.round(Number(e.target.value) * 100))}
                           style={{ width: '120px' }}
                         />
-                        <span className="price-suffix">/{form.unitLabel}</span>
+                        <span className="price-suffix">/{unitLabel}</span>
                       </div>
                     </div>
                   )}
@@ -501,25 +534,36 @@ export default function Products() {
 
                 {/* Categoria */}
                 <div className="modal-field">
-                  <span>Categoria</span>
+                  <span>Categoria <span style={{ color: '#ff6b6b' }}>*</span></span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div className="select">
-                      <select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })}>
+                      <select
+                        {...register('categoryId', { required: 'Selecione uma categoria' })}
+                        style={errors.categoryId ? { borderColor: '#ff6b6b' } : {}}
+                      >
                         <option value="">Selecione uma categoria</option>
-                        {Array.from(new Map(items.map(p => [p.category.id, p.category])).values()).map(cat => (
+                        {apiCategories.map(cat => (
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                       </select>
                     </div>
+                    {errors.categoryId && <span style={{ color: '#ff6b6b', fontSize: '12px' }}>{errors.categoryId.message}</span>}
                     {!addingCategory ? (
                       <button type="button" style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '13px' }} onClick={() => setAddingCategory(true)}>
                         + Cadastrar Categoria
                       </button>
                     ) : (
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input placeholder="Nova categoria" value={newCategory} onChange={e => setNewCategory(e.target.value)} />
-                        <button type="button" className="button button-success" style={{ padding: '8px 16px' }} onClick={() => { setNewCategory(''); setAddingCategory(false) }}>OK</button>
-                        <button type="button" className="button" style={{ padding: '8px 16px' }} onClick={() => setAddingCategory(false)}>X</button>
+                        <input
+                          placeholder="Nova categoria"
+                          value={newCategory}
+                          onChange={e => setNewCategory(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCategory())}
+                        />
+                        <button type="button" className="button button-success" style={{ padding: '8px 16px' }} onClick={addCategory} disabled={isSubmittingCategory}>
+                          {isSubmittingCategory ? '...' : 'OK'}
+                        </button>
+                        <button type="button" className="button" style={{ padding: '8px 16px' }} onClick={() => { setAddingCategory(false); setNewCategory('') }}>X</button>
                       </div>
                     )}
                   </div>
@@ -528,12 +572,12 @@ export default function Products() {
                 {/* Estoque */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <label className="modal-field">
-                    <span>Estoque ({form.unitLabel})</span>
-                    <input type="number" value={form.quantity || ''} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} />
+                    <span>Estoque ({unitLabel})</span>
+                    <input type="number" {...register('quantity', { valueAsNumber: true })} />
                   </label>
                   <label className="modal-field">
-                    <span>Mínimo ({form.unitLabel})</span>
-                    <input type="number" value={form.minQuantity || ''} onChange={e => setForm({ ...form, minQuantity: Number(e.target.value) })} />
+                    <span>Mínimo ({unitLabel})</span>
+                    <input type="number" {...register('minQuantity', { valueAsNumber: true })} />
                   </label>
                 </div>
 
@@ -544,7 +588,7 @@ export default function Products() {
               <button type="button" className="button btn-cancel" onClick={() => setDrawerOpen(false)}>
                 Cancelar
               </button>
-              <button type="button" className="button button-success" onClick={submitProduct} disabled={isSubmitting}>
+              <button type="button" className="button button-success" onClick={onSubmit} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <><span className="shop-spinner" style={{ width: 16, height: 16, borderWidth: 2, display: 'inline-block', verticalAlign: 'middle', marginRight: 8 }} />Processando...</>
                 ) : (
