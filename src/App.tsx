@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7'
 import './assets/styles/App.css'
@@ -7,20 +7,20 @@ import Login from './components/admin/Login'
 import Shop from './pages/shop/Shop'
 import ShopLogin from './pages/shop/ShopLogin'
 import ShopRegister from './pages/shop/ShopRegister'
+import { SessionProvider, useSession } from './contexts/SessionContext'
 import { storageService } from './services/storage.service'
 import { api } from './services/api'
 
-function App() {
+function AppRoutes() {
+  const { user, loading, setUser, clearSession } = useSession()
+
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loggedIn, setLoggedIn] = useState(() => storageService.isAuthenticated())
   const [showPassword, setShowPassword] = useState(false)
 
-  useEffect(() => {
-    storageService.clearOrders()
-    console.log('Todos os pedidos em localStorage foram limpos.')
-  }, [])
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF'
+  const isShopUser = user?.role === 'USER'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,98 +32,101 @@ function App() {
     }
 
     try {
-      await api.post(
-        '/auth/sign-in/email',
-        {
-          email: username.trim().toLowerCase(),
-          password,
-        },
-        true
-      )
+      await api.post('/auth/sign-in/email/admin', {
+        email: username.trim().toLowerCase(),
+        password,
+      }, true)
 
       const session = await api.get('/auth/get-session', true)
 
       if (session?.user) {
-        setLoggedIn(true)
-
-        storageService.setAuth(
-          true,
-          {
-            name: session.user?.name || session.user?.email || 'Usuário',
-            email: session.user?.email || '',
-            role: session.user?.role || 'User',
-          },
-          ''
-        )
+        setUser({
+          id: session.user.id,
+          name: session.user.name || session.user.email || 'Usuário',
+          email: session.user.email || '',
+          role: session.user.role,
+          phone: session.user.phone || '',
+        })
       } else {
         setError('Não foi possível validar a sessão do usuário.')
       }
     } catch (err: any) {
-      console.error('Erro no login:', err)
-      setError(
-        err?.message || 'Falha ao validar login. Verifique suas credenciais.'
-      )
+      setError(err?.message || 'Falha ao validar login. Verifique suas credenciais.')
     }
   }
 
-  function handleLogout() {
-    storageService.logout()
-    setLoggedIn(false)
+  async function handleAdminLogout() {
+    await clearSession()
     setUsername('')
     setPassword('')
     setError('')
   }
 
-  const isShopAuthenticated = storageService.isShopAuthenticated()
+  function publicRoute(element: JSX.Element) {
+    if (loading) return null
+    if (isAdmin) return <Navigate to="/dashboard" replace />
+    if (isShopUser) return <Navigate to="/loja" replace />
+    return element
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#080b16' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#129e62', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    )
+  }
 
   return (
-    <BrowserRouter>
-      <NuqsAdapter>
-      <Routes>
-        <Route path="/loja/login" element={<ShopLogin />} />
-        <Route path="/cadastro" element={<ShopRegister />} />
-        <Route
-          path="/loja"
-          element={
-            isShopAuthenticated ? <Shop /> : <Navigate to="/loja/login" replace />
-          }
+    <Routes>
+      {/* Rotas públicas — redirecionam se já houver sessão */}
+      <Route path="/login" element={publicRoute(
+        <Login
+          username={username}
+          password={password}
+          error={error}
+          showPassword={showPassword}
+          onUsernameChange={setUsername}
+          onPasswordChange={setPassword}
+          onTogglePassword={() => setShowPassword((prev) => !prev)}
+          onSubmit={handleSubmit}
         />
+      )} />
+      <Route path="/loja/login" element={publicRoute(<ShopLogin />)} />
+      <Route path="/cadastro" element={publicRoute(<ShopRegister />)} />
 
-        {!loggedIn ? (
-          <>
-            <Route
-              path="/login"
-              element={
-                <Login
-                  username={username}
-                  password={password}
-                  error={error}
-                  showPassword={showPassword}
-                  onUsernameChange={setUsername}
-                  onPasswordChange={setPassword}
-                  onTogglePassword={() => setShowPassword((prev) => !prev)}
-                  onSubmit={handleSubmit}
-                />
-              }
-            />
+      {/* Rota privada da loja — acessível por clientes e admins */}
+      <Route
+        path="/loja"
+        element={(isShopUser || isAdmin)
+          ? <Shop onLogout={isShopUser ? clearSession : undefined} />
+          : <Navigate to="/loja/login" replace />
+        }
+      />
 
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        ) : (
-          <>
-            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route
-              path="/*"
-              element={<Dashboard onLogout={handleLogout} />}
-            />
-          </>
-        )}
-      </Routes>
-      </NuqsAdapter>
-    </BrowserRouter>
+      {/* Rotas privadas do admin */}
+      <Route
+        path="/*"
+        element={isAdmin
+          ? <Dashboard onLogout={handleAdminLogout} />
+          : <Navigate to="/login" replace />
+        }
+      />
+    </Routes>
   )
 }
 
-export default App
+export default function App() {
+  storageService.clearOrders()
+
+  return (
+    <SessionProvider>
+      <BrowserRouter>
+        <NuqsAdapter>
+          <AppRoutes />
+        </NuqsAdapter>
+      </BrowserRouter>
+    </SessionProvider>
+  )
+}

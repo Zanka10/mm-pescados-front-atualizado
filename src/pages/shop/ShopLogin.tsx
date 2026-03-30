@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
-import { storageService } from '../../services/storage.service'
+import { useSession } from '../../contexts/SessionContext'
+import type { UserRole } from '../../contexts/SessionContext'
 import '../../assets/styles/App.css'
 
 declare global {
@@ -18,6 +19,7 @@ export default function ShopLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const googleInitializedRef = useRef(false)
   const navigate = useNavigate()
+  const { setUser } = useSession()
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -43,16 +45,13 @@ export default function ShopLogin() {
         const session = await api.get('/auth/get-session', true)
 
         if (session?.user) {
-          storageService.setShopAuth(
-            true,
-            {
-              name: session.user?.name || 'Cliente',
-              email: session.user?.email || '',
-              phone: session.user?.phone || '',
-            },
-            ''
-          )
-
+          setUser({
+            id: session.user.id,
+            name: session.user.name || session.user.email || 'Cliente',
+            email: session.user.email || '',
+            role: session.user.role as UserRole,
+            phone: session.user.phone || '',
+          })
           navigate('/loja')
         } else {
           setError('Não foi possível validar a sessão do usuário.')
@@ -109,18 +108,16 @@ export default function ShopLogin() {
       )
 
       const session = await api.get('/auth/get-session', true)
-      
+
       if (session?.user) {
-        storageService.setShopAuth(
-          true,
-          {
-            name: session.user?.name || session.user?.email || 'Cliente',
-            email: session.user?.email || '',
-            phone: session.user?.phone || '',
-          },
-          ''
-        )
-     navigate('/loja')
+        setUser({
+          id: session.user.id,
+          name: session.user.name || session.user.email || 'Cliente',
+          email: session.user.email || '',
+          role: session.user.role as UserRole,
+          phone: session.user.phone || '',
+        })
+        navigate('/loja')
       } else {
         setError('Não foi possível validar a sessão do usuário.')
       }

@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../../assets/styles/Shop.css'
-import type { Order, OrderItem, Product } from '../../types'
-import { paymentService } from '../../services/payment.service'
-import { storageService } from '../../services/storage.service'
+import type { OrderItem, Product } from '../../types'
+
+import { useSession } from '../../contexts/SessionContext'
 import { formatCurrency, formatPhone, formatCep } from '../../utils/formatters'
 import { api } from '../../services/api'
 type CheckoutStep = 'cart' | 'contact' | 'delivery' | 'payment' | 'review'
@@ -24,10 +24,15 @@ interface CategoryProps {
   products: ApiProduct[];
 }
 
-export default function Shop() {
+interface ShopProps {
+  onLogout: () => void
+}
+
+export default function Shop({ onLogout }: ShopProps) {
   const navigate = useNavigate()
-  const shopUser = useMemo(() => storageService.getShopAuthUser(), [])
-  
+  const { user } = useSession()
+  const isAdminViewing = user?.role === 'ADMIN' || user?.role === 'STAFF'
+
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<OrderItem[]>([])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -35,9 +40,9 @@ export default function Shop() {
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart')
 
   const [clientInfo, setClientInfo] = useState({
-    name: shopUser?.name || '',
-    phone: shopUser?.phone || '',
-    email: shopUser?.email || '',
+    name: user?.name || '',
+    phone: user?.phone || '',
+    email: user?.email || '',
     taxId: '',
     cep: '',
     address: '',
@@ -52,7 +57,11 @@ export default function Shop() {
   const avatarRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = () => {
-    storageService.shopLogout()
+    if (isAdminViewing) {
+      navigate('/dashboard')
+      return
+    }
+    onLogout()
     navigate('/loja/login')
   }
 
@@ -308,7 +317,7 @@ export default function Shop() {
           </div>
         </div>
         <div className="header-right">
-          <a href="/login" className="admin-btn">Painel admin</a>
+          {user?.role === "ADMIN" && <a href="/dashboard" className="admin-btn">Painel admin</a>}
           <button className="view-cart-btn" onClick={() => setIsDrawerOpen(true)}>
             <span className="cart-badge">{cart.length}</span>
             <svg viewBox="0 0 24 24" className="cart-icon-small">
@@ -324,7 +333,7 @@ export default function Shop() {
               aria-label="Menu do usuário"
             >
               <span className="user-avatar-letter">
-                {shopUser?.name?.charAt(0).toUpperCase() || '?'}
+                {user?.name?.charAt(0).toUpperCase() || '?'}
               </span>
               <svg className="user-avatar-chevron" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                 <path d="M7 10l5 5 5-5z"/>
@@ -334,8 +343,8 @@ export default function Shop() {
             {isUserMenuOpen && (
               <div className="user-dropdown">
                 <div className="user-dropdown-header">
-                  <span className="user-dropdown-name">{shopUser?.name || 'Cliente'}</span>
-                  <span className="user-dropdown-email">{shopUser?.email || ''}</span>
+                  <span className="user-dropdown-name">{user?.name || 'Cliente'}</span>
+                  <span className="user-dropdown-email">{user?.email || ''}</span>
                 </div>
                 <div className="user-dropdown-divider" />
                 <button className="user-dropdown-item" onClick={() => { setIsUserMenuOpen(false); navigate('/loja/pedidos') }}>
