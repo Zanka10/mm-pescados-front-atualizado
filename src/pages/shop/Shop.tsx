@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../../assets/styles/Shop.css'
 import type { Order, OrderItem, Product } from '../../types'
@@ -48,10 +48,23 @@ export default function Shop() {
     notes: ''
   })
 
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const avatarRef = useRef<HTMLDivElement>(null)
+
   const handleLogout = () => {
     storageService.shopLogout()
     navigate('/loja/login')
   }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
@@ -295,15 +308,6 @@ export default function Shop() {
           </div>
         </div>
         <div className="header-right">
-          <div className="user-info-shop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', marginRight: '16px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>Olá, {shopUser?.name?.split(' ')[0]}!</span>
-            <button 
-              onClick={handleLogout}
-              style={{ background: 'none', border: 'none', color: '#ff4757', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-            >
-              Sair
-            </button>
-          </div>
           <a href="/login" className="admin-btn">Painel admin</a>
           <button className="view-cart-btn" onClick={() => setIsDrawerOpen(true)}>
             <span className="cart-badge">{cart.length}</span>
@@ -312,6 +316,44 @@ export default function Shop() {
             </svg>
             Ver Carrinho
           </button>
+
+          <div className="user-avatar-wrapper" ref={avatarRef}>
+            <button
+              className="user-avatar-btn"
+              onClick={() => setIsUserMenuOpen(prev => !prev)}
+              aria-label="Menu do usuário"
+            >
+              <span className="user-avatar-letter">
+                {shopUser?.name?.charAt(0).toUpperCase() || '?'}
+              </span>
+              <svg className="user-avatar-chevron" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            </button>
+
+            {isUserMenuOpen && (
+              <div className="user-dropdown">
+                <div className="user-dropdown-header">
+                  <span className="user-dropdown-name">{shopUser?.name || 'Cliente'}</span>
+                  <span className="user-dropdown-email">{shopUser?.email || ''}</span>
+                </div>
+                <div className="user-dropdown-divider" />
+                <button className="user-dropdown-item" onClick={() => { setIsUserMenuOpen(false); navigate('/loja/pedidos') }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+                  Meus Pedidos
+                </button>
+                <button className="user-dropdown-item" onClick={() => { setIsUserMenuOpen(false); navigate('/loja/conta') }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  Dados da Conta
+                </button>
+                <div className="user-dropdown-divider" />
+                <button className="user-dropdown-item user-dropdown-item--danger" onClick={() => { setIsUserMenuOpen(false); handleLogout() }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sair
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
