@@ -43,23 +43,23 @@ async function request<T = any>(
 }
 
 export const api = {
-  get<T = any>(path: string, withCredentials = false) {
+  get<T = any>(path: string, withCredentials = true) {
     return request<T>(path, 'GET', undefined, withCredentials)
   },
 
-  post<T = any>(path: string, body?: unknown, withCredentials = false) {
+  post<T = any>(path: string, body?: unknown, withCredentials = true) {
     return request<T>(path, 'POST', body, withCredentials)
   },
 
-  put<T = any>(path: string, body?: unknown, withCredentials = false) {
+  put<T = any>(path: string, body?: unknown, withCredentials = true) {
     return request<T>(path, 'PUT', body, withCredentials)
   },
 
-  patch<T = any>(path: string, body?: unknown, withCredentials = false) {
+  patch<T = any>(path: string, body?: unknown, withCredentials = true) {
     return request<T>(path, 'PATCH', body, withCredentials)
   },
 
-  delete<T = any>(path: string, withCredentials = false) {
+  delete<T = any>(path: string, withCredentials = true) {
     return request<T>(path, 'DELETE', undefined, withCredentials)
   },
 }
