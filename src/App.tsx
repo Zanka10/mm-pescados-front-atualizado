@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7'
 import './assets/styles/App.css'
@@ -7,6 +7,8 @@ import Login from './components/admin/Login'
 import Shop from './pages/shop/Shop'
 import ShopLogin from './pages/shop/ShopLogin'
 import ShopRegister from './pages/shop/ShopRegister'
+import ShopOrders from './pages/shop/ShopOrders'
+import ShopAccount from './pages/shop/ShopAccount'
 import { SessionProvider, useSession } from './contexts/SessionContext'
 import { storageService } from './services/storage.service'
 import { api } from './services/api'
@@ -62,7 +64,7 @@ function AppRoutes() {
     setError('')
   }
 
-  function publicRoute(element: JSX.Element) {
+  function publicRoute(element: React.ReactElement) {
     if (loading) return null
     if (isAdmin) return <Navigate to="/dashboard" replace />
     if (isShopUser) return <Navigate to="/loja" replace />
@@ -96,11 +98,25 @@ function AppRoutes() {
       <Route path="/loja/login" element={publicRoute(<ShopLogin />)} />
       <Route path="/cadastro" element={publicRoute(<ShopRegister />)} />
 
-      {/* Rota privada da loja — acessível por clientes e admins */}
+      {/* Rotas privadas da loja — acessíveis por clientes e admins */}
       <Route
         path="/loja"
         element={(isShopUser || isAdmin)
           ? <Shop onLogout={isShopUser ? clearSession : undefined} />
+          : <Navigate to="/loja/login" replace />
+        }
+      />
+      <Route
+        path="/loja/pedidos"
+        element={(isShopUser || isAdmin)
+          ? <ShopOrders />
+          : <Navigate to="/loja/login" replace />
+        }
+      />
+      <Route
+        path="/loja/conta"
+        element={(isShopUser || isAdmin)
+          ? <ShopAccount />
           : <Navigate to="/loja/login" replace />
         }
       />

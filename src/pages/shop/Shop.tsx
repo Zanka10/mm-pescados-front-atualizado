@@ -25,7 +25,7 @@ interface CategoryProps {
 }
 
 interface ShopProps {
-  onLogout: () => void
+  onLogout?: () => void
 }
 
 export default function Shop({ onLogout }: ShopProps) {
@@ -56,12 +56,16 @@ export default function Shop({ onLogout }: ShopProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const avatarRef = useRef<HTMLDivElement>(null)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (isAdminViewing) {
       navigate('/dashboard')
       return
     }
-    onLogout()
+
+    if (onLogout) {
+      await onLogout()
+    }
+
     navigate('/loja/login')
   }
 
@@ -120,6 +124,37 @@ export default function Shop({ onLogout }: ShopProps) {
     }
     handleCategories();
   }, [setProducts])
+
+
+  useEffect(() => {
+    let active = true
+
+    async function loadCustomerData() {
+      try {
+        const customer = await api.get('/customers/me')
+        if (!active || !customer) return
+
+        setClientInfo(prev => ({
+          ...prev,
+          name: customer.name || prev.name,
+          phone: customer.phone || customer.cellphone || prev.phone,
+          email: customer.email || prev.email,
+          taxId: customer.document || customer.cpf || customer.taxId || prev.taxId,
+          cep: customer.zipCode || customer.cep || prev.cep,
+          address: customer.street || customer.address || prev.address,
+          number: customer.number || prev.number,
+          complement: customer.complement || prev.complement,
+        }))
+      } catch (err) {
+        console.error('Erro ao carregar dados do cliente:', err)
+      }
+    }
+
+    loadCustomerData()
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -285,7 +320,64 @@ export default function Shop({ onLogout }: ShopProps) {
   const handleFinalize = async () => {
     setIsProcessing(true)
     try {
-      await api.post('/orders', {})
+      await api.patch('/customers/me', {
+        name: clientInfo.name,
+        email: clientInfo.email,
+        phone: clientInfo.phone,
+        cellphone: clientInfo.phone,
+        document: clientInfo.taxId.replace(/\D/g, ''),
+        cpf: clientInfo.taxId.replace(/\D/g, ''),
+        taxId: clientInfo.taxId.replace(/\D/g, ''),
+        zipCode: clientInfo.cep.replace(/\D/g, ''),
+        cep: clientInfo.cep.replace(/\D/g, ''),
+        street: clientInfo.address,
+        address: clientInfo.address,
+        number: clientInfo.number,
+        complement: clientInfo.complement,
+      })
+
+      const payload = {
+        contact: {
+          name: clientInfo.name,
+          email: clientInfo.email,
+          phone: clientInfo.phone,
+          taxId: clientInfo.taxId.replace(/\D/g, ''),
+        },
+        delivery: {
+          type: clientInfo.deliveryType,
+          zipCode: clientInfo.cep.replace(/\D/g, ''),
+          address: clientInfo.address,
+          number: clientInfo.number,
+          complement: clientInfo.complement,
+        },
+        paymentMethod: clientInfo.payment === 'AbacatePay' ? 'ABACATEPAY' : clientInfo.payment,
+        notes: clientInfo.notes,
+      }
+
+      const response = await api.post('/orders', payload)
+      const redirectUrl =
+        response?.redirectUrl ||
+        response?.paymentUrl ||
+        response?.url ||
+        response?.checkoutUrl ||
+        response?.payment?.redirectUrl ||
+        response?.payment?.paymentUrl ||
+        response?.payment?.url ||
+        response?.payment?.checkoutUrl ||
+        response?.payments?.[0]?.redirectUrl ||
+        response?.payments?.[0]?.paymentUrl ||
+        response?.payments?.[0]?.url ||
+        response?.payments?.[0]?.checkoutUrl
+
+      if (clientInfo.payment === 'AbacatePay' && redirectUrl) {
+        window.location.href = redirectUrl
+        return
+      }
+
+      if (clientInfo.payment === 'AbacatePay' && !redirectUrl) {
+        alert('O pedido foi criado, mas o link de pagamento não foi retornado pelo backend.')
+        return
+      }
 
       setOrderSuccess(true)
       setCart([])
@@ -837,7 +929,7 @@ export default function Shop({ onLogout }: ShopProps) {
               <div className="action-btns">
                 <button className="action-btn back-btn" onClick={() => setCheckoutStep('payment')}>Voltar</button>
                 <button className="action-btn main-action" onClick={handleFinalize} disabled={isProcessing}>
-                  {isProcessing ? 'Processando...' : 'Confirmar Pedido'}
+                  {isProcessing ? 'Processando...' : clientInfo.payment === 'AbacatePay' ? 'Ir para pagamento' : 'Confirmar Pedido'}
                 </button>
               </div>
             )}

@@ -1,4 +1,4 @@
-import type { Product } from '../pages/Products'
+import type { Product } from '../types'
 
 export const initialProducts: Product[] = [
   { name: 'Filé de salmão', price: 79.9, promoPrice: 69.9, category: 'Peixe', stockKg: 25, minStockKg: 15 },
