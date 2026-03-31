@@ -320,21 +320,21 @@ export default function Shop({ onLogout }: ShopProps) {
   const handleFinalize = async () => {
     setIsProcessing(true)
     try {
-      await api.patch('/customers/me', {
-        name: clientInfo.name,
-        email: clientInfo.email,
-        phone: clientInfo.phone,
-        cellphone: clientInfo.phone,
-        document: clientInfo.taxId.replace(/\D/g, ''),
-        cpf: clientInfo.taxId.replace(/\D/g, ''),
-        taxId: clientInfo.taxId.replace(/\D/g, ''),
-        zipCode: clientInfo.cep.replace(/\D/g, ''),
-        cep: clientInfo.cep.replace(/\D/g, ''),
-        street: clientInfo.address,
-        address: clientInfo.address,
-        number: clientInfo.number,
-        complement: clientInfo.complement,
-      })
+      // await api.patch('/customers/me', {
+      //   name: clientInfo.name,
+      //   email: clientInfo.email,
+      //   phone: clientInfo.phone,
+      //   cellphone: clientInfo.phone,
+      //   document: clientInfo.taxId.replace(/\D/g, ''),
+      //   cpf: clientInfo.taxId.replace(/\D/g, ''),
+      //   taxId: clientInfo.taxId.replace(/\D/g, ''),
+      //   zipCode: clientInfo.cep.replace(/\D/g, ''),
+      //   cep: clientInfo.cep.replace(/\D/g, ''),
+      //   street: clientInfo.address,
+      //   address: clientInfo.address,
+      //   number: clientInfo.number,
+      //   complement: clientInfo.complement,
+      // })
 
       const payload = {
         contact: {
