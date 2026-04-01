@@ -3,6 +3,21 @@ import { Link } from 'react-router-dom'
 import { storageService } from '../../services/storage.service'
 import { formatCurrency } from '../../utils/formatters'
 
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Pendente',
+  CONFIRMED: 'Confirmado',
+  PREPARING: 'Preparando',
+  SHIPPED: 'Enviado',
+  DELIVERED: 'Entregue',
+  CANCELLED: 'Cancelado',
+  CANCELED: 'Cancelado',
+  // Support for old values if they exist in storage
+  'Pendente': 'Pendente',
+  'Em andamento': 'Em andamento',
+  'Concluido': 'Concluído',
+  'Cancelado': 'Cancelado'
+}
+
 export default function DashboardHome() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,7 +54,7 @@ export default function DashboardHome() {
 
   const stats = useMemo(() => {
     const totalSales = orders.reduce((acc, o) => acc + (o.total || 0), 0)
-    const pendingOrders = orders.filter(o => o.status === 'Pendente').length
+    const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'Pendente').length
 
     return {
       totalSales,
@@ -123,8 +138,13 @@ export default function DashboardHome() {
                   </div>
                   <div className="td" style={{ fontWeight: 700 }}>{formatCurrency(o.total || 0)}</div>
                   <div className="td">
-                    <span className={`status-chip ${o.status === 'Pendente' ? 'chip-pending' : o.status === 'Em andamento' ? 'chip-progress' : o.status === 'Concluido' ? 'chip-done' : o.status === 'Cancelado' ? 'chip-cancel' : ''}`}>
-                      {o.status}
+                    <span className={`status-chip ${
+                      (o.status === 'PENDING' || o.status === 'Pendente') ? 'chip-pending' : 
+                      (o.status === 'IN_PROGRESS' || o.status === 'PREPARING' || o.status === 'SHIPPED' || o.status === 'Em andamento') ? 'chip-progress' : 
+                      (o.status === 'COMPLETED' || o.status === 'DELIVERED' || o.status === 'CONFIRMED' || o.status === 'Concluido') ? 'chip-done' : 
+                      (o.status === 'CANCELLED' || o.status === 'CANCELED' || o.status === 'Cancelado') ? 'chip-cancel' : ''
+                    }`}>
+                      {STATUS_LABEL[o.status] || o.status}
                     </span>
                   </div>
                 </div>

@@ -211,74 +211,136 @@ export default function Users() {
       </div>
 
       {modalOpen && (
-        <div className="modal">
-          <div className="modal-card">
-            <div className="modal-title">{editingIndex == null ? 'Cadastrar colaborador' : 'Atualizar colaborador'}</div>
-            <form className="modal-form" onSubmit={submitForm}>
-              <label className="modal-field">
-                <span>Nome</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm7 8v-1c0-2.76-3.58-5-8-5s-8 2.24-8 5v1z" /></svg>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+        <div className="modal" onClick={() => setModalOpen(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {editingIndex == null ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: 'rgba(18, 158, 98, 0.1)', color: 'var(--primary)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+                    </div>
+                    Novo Colaborador
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: 'rgba(33, 150, 243, 0.1)', color: '#2196f3', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </div>
+                    Editar Colaborador
+                  </div>
+                )}
+              </h2>
+              <button className="modal-close" onClick={() => setModalOpen(false)}>&times;</button>
+            </div>
+
+            <div className="modal-body">
+              <form className="modal-form" id="user-form" onSubmit={submitForm}>
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nome Completo</span>
+                  </div>
+                  <input 
+                    placeholder="Ex: João Silva"
+                    value={form.name} 
+                    onChange={(e) => setForm({ ...form, name: e.target.value })} 
+                    required 
+                  />
+                </label>
+
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>E-mail de Acesso</span>
+                  </div>
+                  <input 
+                    type="email" 
+                    placeholder="email@exemplo.com"
+                    value={form.email} 
+                    onChange={(e) => setForm({ ...form, email: e.target.value })} 
+                    required 
+                  />
+                </label>
+
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Senha</span>
+                  </div>
+                  <input 
+                    type="password" 
+                    placeholder="********"
+                    value={form.password} 
+                    onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                    required 
+                  />
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <label className="modal-field">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CPF</span>
+                    </div>
+                    <input 
+                      placeholder="000.000.000-00"
+                      value={form.cpf} 
+                      onChange={(e) => setForm({ ...form, cpf: e.target.value })} 
+                    />
+                  </label>
+
+                  <label className="modal-field">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Telefone</span>
+                    </div>
+                    <input 
+                      placeholder="(00) 00000-0000"
+                      value={form.phone} 
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })} 
+                    />
+                  </label>
                 </div>
-              </label>
-              <label className="modal-field">
-                <span>Email</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M12 13 3.5 7h17L12 13zm0 2L3 8v9h18V8l-9 7z" /></svg>
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <label className="modal-field">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Função</span>
+                    </div>
+                    <div className="select">
+                      <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
+                        <option>Colaborador</option>
+                        <option>Administrador</option>
+                      </select>
+                    </div>
+                  </label>
+
+                  <label className="modal-field">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</span>
+                    </div>
+                    <div className="select">
+                      <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Status })}>
+                        <option>Ativo</option>
+                        <option>Inativo</option>
+                      </select>
+                    </div>
+                  </label>
                 </div>
-              </label>
-              <label className="modal-field">
-                <span>Senha</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M12 17a2 2 0 1 0-2-2 2 2 0 0 0 2 2zm6-6h-1V9a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zm-7-2a3 3 0 0 1 6 0v2H11z" /></svg>
-                  <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-                </div>
-              </label>
-              <label className="modal-field">
-                <span>CPF</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M7 3h10v2H7zM5 7h14v14H5z" /></svg>
-                  <input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} />
-                </div>
-              </label>
-              <label className="modal-field">
-                <span>Telefone</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V21a1 1 0 0 1-1 1C10.29 22 2 13.71 2 3a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.24 1.01l-2.21 2.2z" /></svg>
-                  <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                </div>
-              </label>
-              <label className="modal-field">
-                <span>Função</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm7 8v-1c0-2.76-3.58-5-8-5s-8 2.24-8 5v1z" /></svg>
-                  <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
-                    <option>Colaborador</option>
-                    <option>Administrador</option>
-                  </select>
-                </div>
-              </label>
-              <label className="modal-field">
-                <span>Status</span>
-                <div className="input-with-icon">
-                  <svg className="input-icon" viewBox="0 0 24 24"><path d="M12 17a2 2 0 1 0-2-2 2 2 0 0 0 2 2zm0-14A10 10 0 1 0 22 13 10 10 0 0 0 12 3z" /></svg>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Status })}>
-                    <option>Ativo</option>
-                    <option>Inativo</option>
-                  </select>
-                </div>
-              </label>
-              <div className="modal-actions">
-                <button type="button" className="button" onClick={() => setModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="button button-success">
-                  {editingIndex == null ? 'Salvar' : 'Alterar'}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
+
+            <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button type="button" className="button" onClick={() => setModalOpen(false)} style={{ padding: '12px 24px' }}>
+                Cancelar
+              </button>
+              <button type="submit" form="user-form" className="button button-success" style={{ padding: '12px 32px' }}>
+                {editingIndex == null ? 'Cadastrar Colaborador' : 'Salvar Alterações'}
+              </button>
+            </div>
           </div>
         </div>
       )}

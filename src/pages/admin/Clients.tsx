@@ -183,50 +183,93 @@ export default function Clients() {
       </div>
 
       {modalOpen && (
-        <div className="modal">
-          <div className="modal-card">
-            <div className="modal-title">{editingIndex == null ? 'Cadastrar' : 'Alterar'}</div>
-            <form className="modal-form" onSubmit={submitForm}>
-              <label className="modal-field">
-                <span>Empresa / Cliente</span>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-              </label>
-              <label className="modal-field">
-                <span>CPF / CNPJ</span>
-                <input
-                  value={form.doc}
-                  onChange={(e) => setForm({ ...form, doc: e.target.value })}
-                  required
-                />
-              </label>
-              <label className="modal-field">
-                <span>Endereço</span>
-                <textarea
-                  rows={3}
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                />
-              </label>
-              <label className="modal-field">
-                <span>Telefone</span>
-                <input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </label>
-              <div className="modal-actions">
-                <button type="button" className="button" onClick={() => setModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="button button-success">
-                  Salvar
-                </button>
-              </div>
-            </form>
+        <div className="modal" onClick={() => setModalOpen(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {editingIndex == null ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: 'rgba(18, 158, 98, 0.1)', color: 'var(--primary)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+                    </div>
+                    Cadastrar Cliente
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: 'rgba(33, 150, 243, 0.1)', color: '#2196f3', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </div>
+                    Editar Cliente
+                  </div>
+                )}
+              </h2>
+              <button className="modal-close" onClick={() => setModalOpen(false)}>&times;</button>
+            </div>
+
+            <div className="modal-body">
+              <form className="modal-form" id="client-form" onSubmit={submitForm}>
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Empresa / Cliente</span>
+                  </div>
+                  <input
+                    placeholder="Nome completo ou Razão Social"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
+                </label>
+
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CPF / CNPJ</span>
+                  </div>
+                  <input
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    value={form.doc}
+                    onChange={(e) => setForm({ ...form, doc: e.target.value })}
+                    required
+                  />
+                </label>
+
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Endereço Completo</span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Rua, número, bairro, cidade e CEP"
+                    style={{ resize: 'none' }}
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  />
+                </label>
+
+                <label className="modal-field">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--primary)' }}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Telefone / WhatsApp</span>
+                  </div>
+                  <input
+                    placeholder="(00) 00000-0000"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </label>
+              </form>
+            </div>
+
+            <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button type="button" className="button" onClick={() => setModalOpen(false)} style={{ padding: '12px 24px' }}>
+                Cancelar
+              </button>
+              <button type="submit" form="client-form" className="button button-success" style={{ padding: '12px 32px' }}>
+                {editingIndex == null ? 'Cadastrar Cliente' : 'Salvar Alterações'}
+              </button>
+            </div>
           </div>
         </div>
       )}

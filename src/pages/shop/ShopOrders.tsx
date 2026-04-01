@@ -39,6 +39,16 @@ type ApiOrder = {
   payments?: ApiPayment[]
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Pendente',
+  CONFIRMED: 'Confirmado',
+  PREPARING: 'Preparando',
+  SHIPPED: 'Enviado',
+  DELIVERED: 'Entregue',
+  CANCELLED: 'Cancelado',
+  CANCELED: 'Cancelado',
+}
+
 function normalizeOrders(payload: any): ApiOrder[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.orders)) return payload.orders
@@ -131,7 +141,7 @@ export default function ShopOrders() {
                       {order.createdAt ? new Date(order.createdAt).toLocaleString('pt-BR') : 'Sem data'}
                     </span>
                   </div>
-                  <span className="order-status">{order.status || 'PENDING'}</span>
+                  <span className="order-status">{STATUS_LABEL[order.status || ''] || order.status || 'Pendente'}</span>
                 </div>
 
                 <div className="order-summary-grid">

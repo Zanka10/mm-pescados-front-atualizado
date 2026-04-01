@@ -187,11 +187,16 @@
 .stat-icon.volume { background: rgba(156, 39, 176, 0.1); color: #9c27b0; }
 .stat-icon.top { background: rgba(255, 87, 34, 0.1); color: #ff5722; }
 
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .stat-label {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 6px;
 }
 
 .stat-value {

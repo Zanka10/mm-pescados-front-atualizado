@@ -13,6 +13,7 @@ interface ApiProduct {
   name: string;
   description: string | null;
   priceCents: number;
+  promoPriceCents: number | null;
   imageUrl: string;
   inventory: { quantity: number };
 }
@@ -101,11 +102,16 @@ export default function Shop({ onLogout }: ShopProps) {
 
         const idMap: Record<string, string> = {};
         const allProducts = response.flatMap(cat =>
-          cat.products.map(p => {
+          cat.products.map((p: any) => {
             idMap[p.name] = p.id;
+            const price = Number(p.priceCents) / 100;
+            const promoPrice = p.promoPriceCents ? Number(p.promoPriceCents) / 100 : undefined;
+            
             return {
               name: p.name,
-              price: p.priceCents / 100,
+              price: price,
+              promoPrice: promoPrice,
+              isPromo: !!promoPrice && promoPrice > 0 && promoPrice < price,
               category: cat.name,
               stockKg: p.inventory.quantity,
               image: p.imageUrl,
@@ -163,11 +169,16 @@ export default function Shop({ onLogout }: ShopProps) {
         const idMap: Record<string, string> = {}
         const items: OrderItem[] = (response?.items ?? []).map((item: any) => {
           idMap[item.product.name] = item.id
+          const p = item.product;
+          const price = p.promoPriceCents && p.promoPriceCents > 0 && p.promoPriceCents < p.priceCents 
+            ? p.promoPriceCents / 100 
+            : p.priceCents / 100;
+
           return {
-            productName: item.product.name,
+            productName: p.name,
             quantity: item.quantity,
-            price: item.product.priceCents / 100,
-            image: item.product.imageUrl,
+            price: price,
+            image: p.imageUrl,
           }
         })
         setCartItemIdMap(idMap)
@@ -200,7 +211,10 @@ export default function Shop({ onLogout }: ShopProps) {
 
 
   const addToCart = async (product: Product) => {
-    const qty = quantities[product.name] || 1
+    let qty = quantities[product.name]
+    if (isNaN(qty) || qty <= 0) {
+      qty = 1
+    }
     const productId = productIdMap[product.name]
 
     try {
@@ -217,19 +231,19 @@ export default function Shop({ onLogout }: ShopProps) {
 
     const existing = cart.find(item => item.productName === product.name)
     if (existing) {
-      setCart(cart.map(item =>
-        item.productName === product.name
-          ? { ...item, quantity: item.quantity + qty }
-          : item
-      ))
-    } else {
-      setCart([...cart, {
-        productName: product.name,
-        quantity: qty,
-        price: product.promoPrice || product.price,
-        image: product.image
-      }])
-    }
+        setCart(cart.map(item =>
+          item.productName === product.name
+            ? { ...item, quantity: item.quantity + qty }
+            : item
+        ))
+      } else {
+        setCart([...cart, {
+          productName: product.name,
+          quantity: qty,
+          price: product.isPromo && product.promoPrice ? product.promoPrice : product.price,
+          image: product.image
+        }])
+      }
     setQuantities({ ...quantities, [product.name]: 1 })
     setIsDrawerOpen(true)
     setCheckoutStep('cart')
@@ -239,7 +253,7 @@ export default function Shop({ onLogout }: ShopProps) {
     const item = cart.find(i => i.productName === productName)
     if (!item) return
 
-    const newQuantity = Math.max(1, item.quantity + delta)
+    const newQuantity = Math.max(0.1, parseFloat((item.quantity + delta).toFixed(2)))
     const itemId = cartItemIdMap[productName]
 
     if (itemId) {
@@ -500,8 +514,8 @@ export default function Shop({ onLogout }: ShopProps) {
                   ) : (
                     <div className="no-img-placeholder">🐟</div>
                   )}
-                  {p.isPromo && p.promoPrice && p.promoPrice > 0 && (
-                    <span className="promo-badge">Promoção!</span>
+                  {p.promoPrice && p.promoPrice > 0 && p.promoPrice < p.price && (
+                    <span className="promo-badge">OFERTA</span>
                   )}
                 </div>
                 <div className="shop-card-info">
@@ -509,19 +523,47 @@ export default function Shop({ onLogout }: ShopProps) {
 
                   <div className="price-stock-row">
                     <div className="product-price">
-                      {p.isPromo && p.promoPrice && p.promoPrice > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '12px', textDecoration: 'line-through', color: 'var(--text-muted)', marginBottom: '-4px' }}>
+                      {p.promoPrice && p.promoPrice > 0 && p.promoPrice < p.price ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '13px', textDecoration: 'line-through', color: '#8a93a3' }}>
                             {formatCurrency(p.price)}
                           </span>
-                          <span className="current-price">{formatCurrency(p.promoPrice)}</span>
+                          <span className="current-price" style={{ color: '#129e62' }}>{formatCurrency(p.promoPrice)}</span>
                         </div>
                       ) : (
                         <span className="current-price">{formatCurrency(p.price)}</span>
                       )}
                     </div>
-                    <div className="stock-indicator">
-                      Est: {p.stockKg.toFixed(0)}
+                  </div>
+
+                  <div className="quantity-selector">
+                    <span className="quantity-label">Qtd (kg)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <button 
+                        className="qty-control-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const current = quantities[p.name] || 1;
+                          setQuantities({ ...quantities, [p.name]: Math.max(0.1, parseFloat((current - 0.1).toFixed(1))) });
+                        }}
+                      >-</button>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        className="quantity-input"
+                        placeholder="1.0"
+                        value={quantities[p.name] || ''}
+                        onChange={(e) => setQuantities({ ...quantities, [p.name]: parseFloat(e.target.value) })}
+                      />
+                      <button 
+                        className="qty-control-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const current = quantities[p.name] || 1;
+                          setQuantities({ ...quantities, [p.name]: parseFloat((current + 0.1).toFixed(1)) });
+                        }}
+                      >+</button>
                     </div>
                   </div>
 
@@ -615,19 +657,51 @@ export default function Shop({ onLogout }: ShopProps) {
                 <div className="product-modal-footer">
                   <div className="product-modal-total">
                     <span>Total:</span>
-                    <div style={{ textAlign: 'right' }}>
-                      {selectedProduct.isPromo && selectedProduct.promoPrice && selectedProduct.promoPrice > 0 ? (
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {selectedProduct.promoPrice && selectedProduct.promoPrice > 0 && selectedProduct.promoPrice < selectedProduct.price ? (
                         <>
-                          <div style={{ fontSize: '14px', textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                          <div style={{ fontSize: '14px', textDecoration: 'line-through', color: '#8a93a3' }}>
                             {formatCurrency(selectedProduct.price)}
                           </div>
-                          <span className="modal-price">{formatCurrency(selectedProduct.promoPrice)}</span>
+                          <span className="modal-price" style={{ color: '#129e62' }}>{formatCurrency(selectedProduct.promoPrice)}</span>
                         </>
                       ) : (
                         <span className="modal-price">{formatCurrency(selectedProduct.price)}</span>
                       )}
                     </div>
                   </div>
+
+                  <div className="quantity-selector" style={{ margin: '20px 0' }}>
+                    <span className="quantity-label">Qtd (kg)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <button 
+                        className="qty-control-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const current = quantities[selectedProduct.name] || 1;
+                          setQuantities({ ...quantities, [selectedProduct.name]: Math.max(0.1, parseFloat((current - 0.1).toFixed(1))) });
+                        }}
+                      >-</button>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        className="quantity-input"
+                        placeholder="1.0"
+                        value={quantities[selectedProduct.name] || ''}
+                        onChange={(e) => setQuantities({ ...quantities, [selectedProduct.name]: parseFloat(e.target.value) })}
+                      />
+                      <button 
+                        className="qty-control-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const current = quantities[selectedProduct.name] || 1;
+                          setQuantities({ ...quantities, [selectedProduct.name]: parseFloat((current + 0.1).toFixed(1)) });
+                        }}
+                      >+</button>
+                    </div>
+                  </div>
+
                   <button
                     className="modal-add-btn"
                     onClick={() => {
@@ -666,9 +740,15 @@ export default function Shop({ onLogout }: ShopProps) {
               <div className="cart-step">
                 {cart.length === 0 ? (
                   <div className="empty-cart">
-                    <span className="empty-icon">🛒</span>
-                    <p>Seu carrinho está vazio</p>
-                    <button className="back-to-shop" onClick={() => setIsDrawerOpen(false)}>Começar a comprar</button>
+                    <div className="empty-cart-icon-container">
+                      <span className="empty-icon">🛒</span>
+                    </div>
+                    <h3>Carrinho vazio</h3>
+                    <p>Parece que você ainda não escolheu seus pescados.</p>
+                    <button className="back-to-shop" onClick={() => setIsDrawerOpen(false)}>
+                      Começar a comprar
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
                   </div>
                 ) : (
                   <>
@@ -680,12 +760,12 @@ export default function Shop({ onLogout }: ShopProps) {
                           </div>
                           <div className="item-info">
                             <span className="item-name">{item.productName}</span>
-                            <span className="item-price-unit">{formatCurrency(item.price)} cada</span>
+                            <span className="item-price-unit">{formatCurrency(item.price)} / kg</span>
                             <div className="item-controls">
                               <div className="qty-btns">
-                                <button onClick={() => updateCartQuantity(item.productName, -1)}>-</button>
-                                <span>{item.quantity}</span>
-                                <button onClick={() => updateCartQuantity(item.productName, 1)}>+</button>
+                                <button onClick={() => updateCartQuantity(item.productName, -0.1)}>-</button>
+                                <span>{item.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} kg</span>
+                                <button onClick={() => updateCartQuantity(item.productName, 0.1)}>+</button>
                               </div>
                               <button className="remove-item" onClick={() => removeFromCart(item.productName)}>Remover</button>
                             </div>
@@ -840,25 +920,68 @@ export default function Shop({ onLogout }: ShopProps) {
                     className={`pay-opt ${clientInfo.payment === 'Pix' ? 'active' : ''}`}
                     onClick={() => setClientInfo({ ...clientInfo, payment: 'Pix' })}
                   >
-                    💎 Pix (na entrega)
+                    <div className="pay-opt-content">
+                      <div className="pay-opt-icon">💎</div>
+                      <div className="pay-opt-info">
+                        <span className="pay-opt-title">Pix</span>
+                        <span className="pay-opt-subtitle">Pague na entrega</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="payment-delivery-badge">Entrega</span>
+                      <div className="pay-opt-check"></div>
+                    </div>
                   </button>
+
                   <button
                     className={`pay-opt ${clientInfo.payment === 'Cartão' ? 'active' : ''}`}
                     onClick={() => setClientInfo({ ...clientInfo, payment: 'Cartão' })}
                   >
-                    💳 Cartão (na entrega)
+                    <div className="pay-opt-content">
+                      <div className="pay-opt-icon">💳</div>
+                      <div className="pay-opt-info">
+                        <span className="pay-opt-title">Cartão</span>
+                        <span className="pay-opt-subtitle">Débito ou Crédito</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="payment-delivery-badge">Entrega</span>
+                      <div className="pay-opt-check"></div>
+                    </div>
                   </button>
+
                   <button
                     className={`pay-opt ${clientInfo.payment === 'Dinheiro' ? 'active' : ''}`}
                     onClick={() => setClientInfo({ ...clientInfo, payment: 'Dinheiro' })}
                   >
-                    💵 Dinheiro (na entrega)
+                    <div className="pay-opt-content">
+                      <div className="pay-opt-icon">💵</div>
+                      <div className="pay-opt-info">
+                        <span className="pay-opt-title">Dinheiro</span>
+                        <span className="pay-opt-subtitle">Pague na entrega</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="payment-delivery-badge">Entrega</span>
+                      <div className="pay-opt-check"></div>
+                    </div>
                   </button>
+
                   <button
                     className={`pay-opt ${clientInfo.payment === 'AbacatePay' ? 'active' : ''}`}
                     onClick={() => setClientInfo({ ...clientInfo, payment: 'AbacatePay' })}
                   >
-                    🥑 Abacate Pay (Online)
+                    <div className="pay-opt-content">
+                      <div className="pay-opt-icon">🥑</div>
+                      <div className="pay-opt-info">
+                        <span className="pay-opt-title">Abacate Pay</span>
+                        <span className="pay-opt-subtitle">Pix ou Cartão Online</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="payment-online-badge">Online</span>
+                      <div className="pay-opt-check"></div>
+                    </div>
                   </button>
                 </div>
               </div>

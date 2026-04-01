@@ -16,7 +16,8 @@ export default function Reports() {
       // Filter by period (mock logic for now as dates might be varied)
       // In a real app, we'd check order.date
       
-      if (order.status === 'Concluido') {
+      const isCompleted = ['COMPLETED', 'DELIVERED', 'CONFIRMED', 'Concluido'].includes(order.status)
+      if (isCompleted) {
         completedOrders++
         order.items?.forEach(item => {
           if (!productSales[item.productName]) {

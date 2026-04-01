@@ -17,7 +17,7 @@ interface ApiOrderItem {
 interface ApiOrder {
   id: string
   code: string
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'CANCELED'
   totalCents: number
   createdAt: string
   customer: {
@@ -35,7 +35,7 @@ interface ApiOrder {
   }[]
 }
 
-type StatusTab = 'Todos' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+type StatusTab = 'Todos' | 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'CANCELED'
 
 const PAYMENT_LABEL: Record<string, string> = {
   PIX: 'Pix',
@@ -46,9 +46,11 @@ const PAYMENT_LABEL: Record<string, string> = {
 const STATUS_TABS: { label: string; value: StatusTab }[] = [
   { label: 'Todos', value: 'Todos' },
   { label: 'Pendentes', value: 'PENDING' },
-  { label: 'Em andamento', value: 'IN_PROGRESS' },
-  { label: 'Concluídos', value: 'COMPLETED' },
-  { label: 'Cancelados', value: 'CANCELLED' },
+  { label: 'Confirmados', value: 'CONFIRMED' },
+  { label: 'Preparando', value: 'PREPARING' },
+  { label: 'Enviados', value: 'SHIPPED' },
+  { label: 'Entregues', value: 'DELIVERED' },
+  { label: 'Cancelados', value: 'CANCELED' },
 ]
 
 export default function Orders() {
@@ -254,9 +256,11 @@ export default function Orders() {
                         onChange={(e) => updateStatus(o.id, e.target.value as ApiOrder['status'])}
                       >
                         <option value="PENDING">Pendente</option>
-                        <option value="IN_PROGRESS">Em andamento</option>
-                        <option value="COMPLETED">Concluído</option>
-                        <option value="CANCELLED">Cancelado</option>
+                        <option value="CONFIRMED">Confirmado</option>
+                        <option value="PREPARING">Preparando</option>
+                        <option value="SHIPPED">Enviado</option>
+                        <option value="DELIVERED">Entregue</option>
+                        <option value="CANCELED">Cancelado</option>
                       </select>
                     </div>
                     <div className="td col-actions" onClick={e => e.stopPropagation()}>
