@@ -1,5 +1,5 @@
 export const API_URL =
-  import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'http://localhost:3333/api'
+  import.meta.env.VITE_API_URL || '/api'
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -10,9 +10,13 @@ async function requestFormData<T = any>(
   withCredentials = false
 ): Promise<T> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const token = localStorage.getItem('mm-auth-token') || localStorage.getItem('mm-shop-auth-token')
 
   const response = await fetch(`${API_URL}${normalizedPath}`, {
     method,
+    headers: {
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
     credentials: withCredentials ? 'include' : 'same-origin',
     body,
   })
@@ -46,11 +50,13 @@ async function request<T = any>(
   withCredentials = false
 ): Promise<T> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const token = localStorage.getItem('mm-auth-token') || localStorage.getItem('mm-shop-auth-token')
 
   const response = await fetch(`${API_URL}${normalizedPath}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     },
     credentials: withCredentials ? 'include' : 'same-origin',
     body: body !== undefined ? JSON.stringify(body) : undefined,
