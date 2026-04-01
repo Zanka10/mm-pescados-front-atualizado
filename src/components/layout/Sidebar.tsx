@@ -113,7 +113,29 @@ export default function Sidebar({ onLogout, isOpen, onClose }: Props) {
             Sair
           </button>
         </nav>
-        <div className="sidebar-footer">© 2024 MM Pescados</div>
+        <div className="sidebar-footer" style={{ 
+          padding: '24px 20px', 
+          borderTop: '1px solid var(--border-color)', 
+          marginTop: 'auto',
+          textAlign: 'center'
+        }}>
+          <p style={{ 
+            fontSize: '12px', 
+            color: 'var(--text-muted)', 
+            fontWeight: 600,
+            letterSpacing: '0.5px'
+          }}>
+            © 2026 MM Pescados
+          </p>
+          <p style={{ 
+            fontSize: '10px', 
+            color: 'rgba(255,255,255,0.2)', 
+            marginTop: '4px',
+            textTransform: 'uppercase'
+          }}>
+            Todos os direitos reservados
+          </p>
+        </div>
       </aside>
     </>
   )
