@@ -217,7 +217,7 @@ export default function ShopRegister() {
         </form>
       </div>
       
-      <div className="login-copy">© {new Date().getFullYear()} MM Pescados</div>
+      <div className="login-copy">© 2026 MM Pescados - Todos os direitos reservados</div>
     </div>
   )
 }

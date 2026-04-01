@@ -418,7 +418,7 @@ export default function Shop({ onLogout }: ShopProps) {
             </div>
             <p className="store-location">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-              Vargem Grande, Florianópolis - SC
+              Santo Antônio de Lisboa, Florianópolis - SC
             </p>
           </div>
         </div>
@@ -623,6 +623,56 @@ export default function Shop({ onLogout }: ShopProps) {
           </div>
         )}
       </main>
+
+      <footer className="shop-footer">
+        <div className="footer-container">
+          <div className="footer-top">
+            <div className="footer-section">
+              <h4>MM Pescados</h4>
+              <p>Os melhores pescados de Florianópolis diretamente para sua mesa. Qualidade e frescor garantidos.</p>
+              <div className="social-links" style={{ marginTop: '20px' }}>
+                <a href="https://www.instagram.com/mm_pescadosfpolis/" target="_blank" rel="noreferrer" className="social-link" title="Instagram">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                </a>
+              </div>
+            </div>
+
+            <div className="footer-section">
+              <h4>Endereço</h4>
+              <a 
+                href="https://www.google.com/maps/search/?api=1&query=Rua+Deputado+Walter+Gomes,+340+-+Santo+Antônio+de+Lisboa,+Florianópolis+-+SC,+88050-501" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="footer-address-link"
+                style={{ textDecoration: 'none' }}
+              >
+                <address className="footer-address">
+                  <p>Rua Deputado Walter Gomes, 340</p>
+                  <p>Santo Antônio de Lisboa</p>
+                  <p>Florianópolis - SC</p>
+                  <p>CEP: 88050-501</p>
+                  <span style={{ color: 'var(--primary)', fontSize: '12px', fontWeight: 700, marginTop: '10px', display: 'block' }}>
+                    📍 Ver no Google Maps
+                  </span>
+                </address>
+              </a>
+            </div>
+
+            <div className="footer-section">
+              <h4>Newsletter</h4>
+              <p>Receba ofertas exclusivas e novidades em seu e-mail.</p>
+              <form className="newsletter-form" style={{ marginTop: '15px' }} onSubmit={(e) => e.preventDefault()}>
+                <input type="email" placeholder="Seu melhor e-mail" />
+                <button type="submit" className="newsletter-btn">Assinar</button>
+              </form>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <p className="copyright">© 2026 MM Pescados - Todos os direitos reservados</p>
+          </div>
+        </div>
+      </footer>
 
       {/* Botão flutuante do WhatsApp */}
       <div className="floating-contact">
@@ -905,7 +955,8 @@ export default function Shop({ onLogout }: ShopProps) {
                   <div className="pickup-info">
                     <p>Você poderá retirar seu pedido em nossa loja:</p>
                     <address>
-                      Rua Exemplo, 123 - Bairro - Cidade/UF
+                      Rua Deputado Walter Gomes, 340 - Santo Antônio de Lisboa<br />
+                      CEP: 88050-501 - Florianópolis/SC
                     </address>
                   </div>
                 )}
