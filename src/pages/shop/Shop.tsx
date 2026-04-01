@@ -595,20 +595,20 @@ export default function Shop({ onLogout }: ShopProps) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6" /></svg>
               Anterior
             </button>
-            <div className="pagination-pages">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  className={`page-number ${currentPage === page ? 'active' : ''}`}
-                  onClick={() => {
-                    setCurrentPage(page);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                className={`page-number ${currentPage === page ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentPage(page);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                {page}
+              </button>
+            ))}
+
             <button
               className="pagination-btn"
               disabled={currentPage === totalPages}
@@ -618,7 +618,7 @@ export default function Shop({ onLogout }: ShopProps) {
               }}
             >
               Próxima
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" /></svg>
             </button>
           </div>
         )}
