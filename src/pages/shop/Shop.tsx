@@ -215,17 +215,34 @@ export default function Shop({ onLogout }: ShopProps) {
     if (isNaN(qty) || qty <= 0) {
       qty = 1
     }
+    
+    // Garantir que enviamos um número limpo (float)
+    const cleanQty = parseFloat(qty.toFixed(2))
     const productId = productIdMap[product.name]
 
+    if (!productId) {
+      alert('Erro: Produto não identificado. Tente atualizar a página.')
+      return
+    }
+
     try {
-      const response = await api.post('/cart/items', { productId, quantity: qty })
-      const itemId = response?.cart?.items?.find((i: any) => i.productId === productId)?.id
+      const response = await api.post('/cart/items', { 
+        productId, 
+        quantity: cleanQty 
+      })
+      
+      const itemId = response?.cart?.items?.find((i: any) => 
+        (i.productId === productId) || (i.product_id === productId)
+      )?.id
+      
       if (itemId) {
         setCartItemIdMap(prev => ({ ...prev, [product.name]: itemId }))
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao adicionar ao carrinho:', err)
-      alert('Não foi possível adicionar o item ao carrinho. Tente novamente.')
+      // Se o erro for do backend, mostramos a mensagem se houver
+      const msg = err.message || 'Não foi possível adicionar o item ao carrinho. Tente novamente.'
+      alert(msg)
       return
     }
 
@@ -259,8 +276,10 @@ export default function Shop({ onLogout }: ShopProps) {
     if (itemId) {
       try {
         await api.patch(`/cart/items/${itemId}`, { quantity: newQuantity })
-      } catch (err) {
+      } catch (err: any) {
         console.error('Erro ao atualizar quantidade:', err)
+        const msg = err.message || 'Não foi possível atualizar a quantidade.'
+        alert(msg)
         return
       }
     }
@@ -554,7 +573,10 @@ export default function Shop({ onLogout }: ShopProps) {
                         className="quantity-input"
                         placeholder="1.0"
                         value={quantities[p.name] || ''}
-                        onChange={(e) => setQuantities({ ...quantities, [p.name]: parseFloat(e.target.value) })}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(',', '.')
+                          setQuantities({ ...quantities, [p.name]: parseFloat(val) })
+                        }}
                       />
                       <button 
                         className="qty-control-btn"
@@ -739,7 +761,10 @@ export default function Shop({ onLogout }: ShopProps) {
                         className="quantity-input"
                         placeholder="1.0"
                         value={quantities[selectedProduct.name] || ''}
-                        onChange={(e) => setQuantities({ ...quantities, [selectedProduct.name]: parseFloat(e.target.value) })}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(',', '.')
+                          setQuantities({ ...quantities, [selectedProduct.name]: parseFloat(val) })
+                        }}
                       />
                       <button 
                         className="qty-control-btn"
